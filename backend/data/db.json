@@ -1,0 +1,33 @@
+{
+  "users": [
+    {
+      "id": "demo-user-1",
+      "email": "demo@spotube.app",
+      "passwordHash": "$2a$10$X86xZ3F1eNqA9p2M9FvTce4q4Q5mU2I8fC1D7g6H5j4k3l2m1n0o.",
+      "displayName": "Music Explorer",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      "preferredLanguages": [
+        "Telugu",
+        "Hindi",
+        "English"
+      ],
+      "createdAt": "2026-11-02T14:17:06.723Z"
+    }
+  ],
+  "likes": [],
+  "playlists": [
+    {
+      "id": "pl-chill-vibes",
+      "userId": "demo-user-1",
+      "title": "Midnight Chill Vibes",
+      "description": "Relaxing acoustic melodies and late night rhythms",
+      "coverUrl": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
+      "isPublic": true,
+      "tracks": [],
+      "createdAt": "2026-11-02T14:17:06.726Z",
+      "updatedAt": "2026-11-02T14:17:06.726Z"
+    }
+  ],
+  "history": [],
+  "preferences": {}
+}
