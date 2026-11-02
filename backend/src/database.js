@@ -9,35 +9,22 @@ if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
-// Initial default state
+// Clean First-Launch Default State (No fake AI likes, no fake history)
 const defaultState = {
   users: [
     {
       id: 'demo-user-1',
-      email: 'demo@spotube.app',
-      passwordHash: '$2a$10$X86xZ3F1eNqA9p2M9FvTce4q4Q5mU2I8fC1D7g6H5j4k3l2m1n0o.', // demo123
-      displayName: 'Music Explorer',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      email: 'user@soundwave.local',
+      passwordHash: '$2a$10$X86xZ3F1eNqA9p2M9FvTce4q4Q5mU2I8fC1D7g6H5j4k3l2m1n0o.',
+      displayName: 'User',
+      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
       preferredLanguages: ['Telugu', 'Hindi', 'English'],
       createdAt: new Date().toISOString()
     }
   ],
-  likes: [],
-  playlists: [
-    {
-      id: 'pl-chill-vibes',
-      userId: 'demo-user-1',
-      title: 'Midnight Chill Vibes',
-      description: 'Relaxing acoustic melodies and late night rhythms',
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500',
-      isPublic: true,
-      tracks: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ],
-  history: [],
-  preferences: {}
+  likes: [], // Clean: user manually likes songs
+  playlists: [], // Clean: user manually creates playlists
+  history: [] // Clean: recorded only on actual user playback
 };
 
 class Database {
@@ -49,10 +36,15 @@ class Database {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        // Ensure likes and history are user-managed
+        if (!parsed.likes) parsed.likes = [];
+        if (!parsed.playlists) parsed.playlists = [];
+        if (!parsed.history) parsed.history = [];
+        return parsed;
       }
     } catch (e) {
-      console.error('Error reading db.json, reinitializing default:', e.message);
+      console.error('Error reading db.json, reinitializing clean default:', e.message);
     }
     this.save(defaultState);
     return JSON.parse(JSON.stringify(defaultState));
@@ -89,7 +81,7 @@ class Database {
     return user;
   }
 
-  // --- Likes ---
+  // --- Likes (Strictly Manual User Action) ---
   getUserLikes(userId) {
     return this.data.likes.filter(l => l.userId === userId).map(l => l.track);
   }
@@ -99,6 +91,7 @@ class Database {
   }
 
   addLike(userId, track) {
+    if (!track || !track.id) return false;
     if (!this.isLiked(userId, track.id)) {
       this.data.likes.push({
         userId,
@@ -119,7 +112,7 @@ class Database {
     return true;
   }
 
-  // --- Playlists ---
+  // --- Playlists (Strictly Manual User Action) ---
   getUserPlaylists(userId) {
     return this.data.playlists.filter(p => p.userId === userId || p.isPublic);
   }
@@ -128,14 +121,14 @@ class Database {
     return this.data.playlists.find(p => p.id === id);
   }
 
-  createPlaylist(userId, { title, description, coverUrl, isPublic = true }) {
+  createPlaylist(userId, { title, description, coverUrl }) {
     const newPlaylist = {
       id: 'pl-' + Date.now(),
       userId,
-      title: title || 'My Playlist',
+      title: title || 'New Playlist',
       description: description || '',
       coverUrl: coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500',
-      isPublic: Boolean(isPublic),
+      isPublic: true,
       tracks: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -174,7 +167,7 @@ class Database {
     return true;
   }
 
-  // --- History ---
+  // --- Listening History (Real playback events only) ---
   getUserHistory(userId, limit = 30) {
     return this.data.history
       .filter(h => h.userId === userId)
@@ -183,23 +176,20 @@ class Database {
       .map(h => ({ ...h.track, playedAt: h.playedAt }));
   }
 
-  recordHistory(userId, track, completionRate = 1.0, skipped = false) {
+  recordHistory(userId, track) {
+    if (!track || !track.id) return;
     this.data.history.unshift({
       id: 'hist-' + Date.now(),
       userId,
       trackId: track.id,
       track,
-      playedAt: new Date().toISOString(),
-      completionRate,
-      skipped
+      playedAt: new Date().toISOString()
     });
-    // Keep max 200 history items per user
-    if (this.data.history.length > 500) {
-      this.data.history = this.data.history.slice(0, 500);
+    if (this.data.history.length > 300) {
+      this.data.history = this.data.history.slice(0, 300);
     }
     this.save();
   }
 }
 
 module.exports = new Database();
-

@@ -26,7 +26,6 @@ export const LyricsModal: React.FC = () => {
 
   if (!isLyricsOpen || !currentTrack) return null;
 
-  // Find currently active lyrics line index
   let activeIndex = -1;
   if (lyrics && lyrics.lines) {
     for (let i = 0; i < lyrics.lines.length; i++) {
@@ -39,27 +38,27 @@ export const LyricsModal: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#121212]/95 backdrop-blur-2xl flex flex-col p-8 select-none">
+    <div className="fixed inset-0 z-50 bg-[#090909]/95 backdrop-blur-md flex flex-col p-8 select-none">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-6 max-w-4xl mx-auto w-full">
-        <div className="flex items-center space-x-4">
-          <img src={currentTrack.artwork} alt={currentTrack.title} className="w-14 h-14 rounded-lg shadow-xl" />
+      <div className="flex items-center justify-between pb-6 max-w-3xl mx-auto w-full border-b border-[#222222]">
+        <div className="flex items-center space-x-3">
+          <img src={currentTrack.artwork} alt={currentTrack.title} className="w-12 h-12 rounded shadow" />
           <div>
-            <h2 className="text-xl font-extrabold text-white">{currentTrack.title}</h2>
-            <p className="text-sm text-neutral-400">{currentTrack.artist}</p>
+            <h2 className="text-base font-bold text-white">{currentTrack.title}</h2>
+            <p className="text-xs text-neutral-400">{currentTrack.artist}</p>
           </div>
         </div>
 
         <button
           onClick={toggleLyrics}
-          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          className="p-2 rounded bg-[#1D1D1D] hover:bg-[#2A2A2A] text-white transition-colors"
         >
-          <X className="w-6 h-6" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Lyrics Scroll Body */}
-      <div className="flex-1 overflow-y-auto max-w-3xl mx-auto w-full py-12 space-y-8 text-center sm:text-left">
+      <div className="flex-1 overflow-y-auto max-w-2xl mx-auto w-full py-10 space-y-6 text-center">
         {lyrics && lyrics.lines && lyrics.lines.length > 0 ? (
           lyrics.lines.map((line, idx) => {
             const isActive = idx === activeIndex;
@@ -68,10 +67,10 @@ export const LyricsModal: React.FC = () => {
                 key={idx}
                 ref={isActive ? activeLineRef : null}
                 onClick={() => seek(line.time)}
-                className={`text-2xl sm:text-4xl font-extrabold transition-all duration-300 cursor-pointer ${
+                className={`text-xl sm:text-2xl font-bold transition-all cursor-pointer ${
                   isActive
-                    ? 'text-[#1DB954] scale-105 opacity-100'
-                    : 'text-white/40 hover:text-white/80 opacity-60'
+                    ? 'text-[#E50914] scale-105'
+                    : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
                 {line.text}
@@ -80,13 +79,11 @@ export const LyricsModal: React.FC = () => {
           })
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-neutral-500">
-            <Mic2 className="w-12 h-12 stroke-1 mb-4 text-neutral-600" />
-            <p className="text-xl font-bold">Synchronized Lyrics Unavailable</p>
-            <p className="text-sm mt-1">Enjoy the music streaming in full high-definition</p>
+            <Mic2 className="w-10 h-10 stroke-1 mb-3 text-neutral-600" />
+            <p className="text-sm font-semibold">Lyrics not available for this track</p>
           </div>
         )}
       </div>
     </div>
   );
 };
-

@@ -11,19 +11,12 @@ import {
   Repeat,
   Repeat1,
   Mic2,
-  ListMusic,
   Share2
 } from 'lucide-react';
 import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
 import { api } from '../services/api';
 import { SyncedLyrics } from '../types';
-
-function formatTime(seconds: number): string {
-  if (isNaN(seconds) || seconds < 0) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-}
+import { MobileWaveformProgressBar } from './MobileWaveformProgressBar';
 
 export const FullScreenPlayer: React.FC = () => {
   const {
@@ -60,37 +53,37 @@ export const FullScreenPlayer: React.FC = () => {
   const isLiked = likedTrackIds.includes(currentTrack.id);
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-[#3a2010] via-[#1a120e] to-[#121212] flex flex-col justify-between p-6 select-none transition-transform duration-300">
+    <div className="fixed inset-0 z-50 bg-[#090909] flex flex-col justify-between p-5 select-none transition-transform duration-300">
       {/* Top Bar */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between pt-1">
         <button
           onClick={() => setFullScreenOpen(false)}
-          className="p-2 text-white/80 hover:text-white"
+          className="p-2 text-neutral-400 hover:text-white"
         >
-          <ChevronDown className="w-7 h-7" />
+          <ChevronDown className="w-6 h-6" />
         </button>
 
         <div className="text-center truncate px-4">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400">
-            Playing from Album
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">
+            Playing Track
           </p>
-          <p className="text-xs font-bold text-white truncate">{currentTrack.album}</p>
+          <p className="text-xs font-semibold text-white truncate">{currentTrack.album}</p>
         </div>
 
         <button
           onClick={() => openOptionsMenu(currentTrack)}
-          className="p-2 text-white/80 hover:text-white"
+          className="p-2 text-neutral-400 hover:text-white"
         >
-          <MoreVertical className="w-5 h-5" />
+          <MoreVertical className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Album Artwork or Synced Lyrics */}
-      <div className="my-auto py-4">
+      {/* Album Artwork or Synced Lyrics Card */}
+      <div className="my-auto py-2">
         {showLyricsCard ? (
-          <div className="h-80 bg-black/40 backdrop-blur-md rounded-2xl p-6 overflow-y-auto space-y-4 border border-white/10">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
-              <span className="text-xs font-bold text-[#1DB954] uppercase tracking-wider">Synchronized Lyrics</span>
+          <div className="h-72 bg-[#151515] rounded-xl p-5 overflow-y-auto space-y-4 border border-[#242424]">
+            <div className="flex items-center justify-between pb-2 border-b border-[#242424]">
+              <span className="text-xs font-bold text-[#E50914] uppercase tracking-wider">Lyrics</span>
               <button
                 onClick={() => setShowLyricsCard(false)}
                 className="text-xs text-neutral-400 hover:text-white"
@@ -100,13 +93,15 @@ export const FullScreenPlayer: React.FC = () => {
             </div>
             {lyrics && lyrics.lines.length > 0 ? (
               lyrics.lines.map((line, idx) => {
-                const isActive = progress >= line.time && (idx === lyrics.lines.length - 1 || progress < lyrics.lines[idx + 1].time);
+                const isActive =
+                  progress >= line.time &&
+                  (idx === lyrics.lines.length - 1 || progress < lyrics.lines[idx + 1].time);
                 return (
                   <p
                     key={idx}
                     onClick={() => seek(line.time)}
-                    className={`text-lg font-bold transition-all ${
-                      isActive ? 'text-[#1DB954] scale-105' : 'text-white/40'
+                    className={`text-base font-bold transition-all ${
+                      isActive ? 'text-[#E50914]' : 'text-neutral-500'
                     }`}
                   >
                     {line.text}
@@ -114,16 +109,21 @@ export const FullScreenPlayer: React.FC = () => {
                 );
               })
             ) : (
-              <p className="text-sm text-neutral-400">Enjoy the music streaming with zero ads.</p>
+              <p className="text-xs text-neutral-400">No synchronized lyrics available.</p>
             )}
           </div>
         ) : (
-          <div className="aspect-square w-full max-w-[340px] mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-black/80 border border-white/5">
+          <div className="aspect-square w-full max-w-[310px] mx-auto rounded-xl overflow-hidden shadow-xl bg-[#151515] border border-[#242424] relative">
             <img
               src={currentTrack.artwork}
               alt={currentTrack.title}
               className="w-full h-full object-cover"
             />
+            {currentTrack.isPreview && (
+              <div className="absolute top-2 left-2 bg-[#E50914] text-white text-[9px] font-bold px-2 py-0.5 rounded">
+                30s Preview
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -131,105 +131,96 @@ export const FullScreenPlayer: React.FC = () => {
       {/* Track Info & Like */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <div className="truncate pr-4">
-            <h1 className="text-2xl font-black text-white truncate tracking-tight">
+          <div className="truncate pr-3">
+            <h1 className="text-xl font-bold text-white truncate tracking-tight">
               {currentTrack.title}
             </h1>
-            <p className="text-sm font-semibold text-neutral-400 truncate mt-0.5">
+            <p className="text-xs font-medium text-neutral-400 truncate mt-0.5">
               {currentTrack.artist}
             </p>
           </div>
           <button
             onClick={() => toggleLike(currentTrack)}
-            className="p-2 transition-transform active:scale-125"
+            className="p-1.5 transition-transform active:scale-125"
           >
             <Heart
-              className={`w-7 h-7 ${
-                isLiked ? 'text-[#1DB954] fill-[#1DB954]' : 'text-white'
+              className={`w-6 h-6 ${
+                isLiked ? 'text-[#E50914] fill-[#E50914]' : 'text-neutral-400'
               }`}
             />
           </button>
         </div>
 
-        {/* Timeline Scrubber */}
-        <div className="space-y-1 mb-4">
-          <input
-            type="range"
-            min={0}
-            max={duration || 100}
-            value={progress}
-            onChange={e => seek(parseFloat(e.target.value))}
-            className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer"
+        {/* Waveform-Style Progress Player */}
+        <div className="mb-4">
+          <MobileWaveformProgressBar
+            progress={progress}
+            duration={duration}
+            onSeek={seek}
+            trackId={currentTrack.id}
           />
-          <div className="flex justify-between text-[11px] font-semibold text-neutral-400">
-            <span>{formatTime(progress)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
         </div>
 
         {/* Playback Controls */}
-        <div className="flex items-center justify-between px-2 mb-6">
+        <div className="flex items-center justify-between px-3 mb-4">
           <button
             onClick={toggleShuffle}
             className={`p-2 transition-colors ${
-              shuffle ? 'text-[#1DB954]' : 'text-neutral-400'
+              shuffle ? 'text-[#E50914]' : 'text-neutral-400'
             }`}
           >
-            <Shuffle className="w-5 h-5" />
+            <Shuffle className="w-4 h-4" />
           </button>
 
           <button onClick={previousTrack} className="p-2 text-white">
-            <SkipBack className="w-8 h-8 fill-current" />
+            <SkipBack className="w-6 h-6 fill-current" />
           </button>
 
           <button
             onClick={togglePlay}
-            className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center shadow-2xl transition-transform active:scale-90"
+            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg active:scale-90 transition-transform"
           >
             {isPlaying ? (
-              <Pause className="w-8 h-8 fill-black" />
+              <Pause className="w-6 h-6 fill-black" />
             ) : (
-              <Play className="w-8 h-8 fill-black ml-1" />
+              <Play className="w-6 h-6 fill-black ml-0.5" />
             )}
           </button>
 
           <button onClick={nextTrack} className="p-2 text-white">
-            <SkipForward className="w-8 h-8 fill-current" />
+            <SkipForward className="w-6 h-6 fill-current" />
           </button>
 
           <button
             onClick={toggleRepeat}
             className={`p-2 transition-colors ${
-              repeatMode !== 'off' ? 'text-[#1DB954]' : 'text-neutral-400'
+              repeatMode !== 'off' ? 'text-[#E50914]' : 'text-neutral-400'
             }`}
           >
-            {repeatMode === 'one' ? <Repeat1 className="w-5 h-5" /> : <Repeat className="w-5 h-5" />}
+            {repeatMode === 'one' ? <Repeat1 className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Bottom Utility Icons */}
-        <div className="flex items-center justify-between text-neutral-400 pt-2 border-t border-white/5">
+        {/* Bottom Bar: Lyrics & Share */}
+        <div className="flex items-center justify-between text-neutral-400 pt-2 border-t border-[#202020]">
           <button
             onClick={() => setShowLyricsCard(!showLyricsCard)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-              showLyricsCard ? 'bg-[#1DB954] text-black' : 'bg-white/10 text-white'
+            className={`flex items-center space-x-1.5 px-3 py-1 rounded text-xs font-semibold ${
+              showLyricsCard ? 'bg-[#E50914] text-white' : 'bg-[#1D1D1D] text-neutral-300'
             }`}
           >
-            <Mic2 className="w-3.5 h-3.5" />
+            <Mic2 className="w-3 h-3" />
             <span>Lyrics</span>
           </button>
 
-          <div className="flex items-center space-x-4">
-            <button className="p-1.5 hover:text-white">
-              <Share2 className="w-5 h-5" />
-            </button>
-            <button className="p-1.5 hover:text-white">
-              <ListMusic className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={() => openOptionsMenu(currentTrack)}
+            className="p-1.5 text-neutral-400 hover:text-white"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
   );
 };
-

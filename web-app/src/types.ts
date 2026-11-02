@@ -2,15 +2,14 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  artistId?: string;
   album: string;
-  albumId?: string;
   artwork: string;
   duration: number; // in seconds
   audioUrl?: string;
   language?: string;
   genre?: string;
   releaseYear?: number;
+  isPreview?: boolean;
 }
 
 export interface Artist {
@@ -18,7 +17,6 @@ export interface Artist {
   name: string;
   artwork: string;
   genres: string[];
-  monthlyListeners: number;
   topTracks?: Track[];
 }
 
@@ -54,4 +52,3 @@ export interface SyncedLyrics {
   plainText?: string;
   isSynced: boolean;
 }
-

@@ -5,6 +5,8 @@ interface PlayerStore {
   // Current playback state
   currentTrack: Track | null;
   isPlaying: boolean;
+  isBuffering: boolean;
+  playbackError: string | null;
   progress: number;
   duration: number;
   volume: number;
@@ -46,25 +48,55 @@ interface PlayerStore {
   toggleLyrics: () => void;
 }
 
-// Global HTML5 Audio instance for seamless background streaming
 const audioElement = new Audio();
 audioElement.preload = 'auto';
 
 export const usePlayerStore = create<PlayerStore>((set, get) => {
-  // Audio element listeners
+  // Precise time update
   audioElement.addEventListener('timeupdate', () => {
     set({ progress: audioElement.currentTime });
   });
 
+  // Verify real audio duration once audio headers arrive
   audioElement.addEventListener('loadedmetadata', () => {
-    set({ duration: audioElement.duration || get().currentTrack?.duration || 0 });
+    const realDuration = audioElement.duration;
+    if (realDuration && !isNaN(realDuration) && isFinite(realDuration)) {
+      set({ duration: realDuration, isBuffering: false, playbackError: null });
+    }
   });
 
+  audioElement.addEventListener('canplay', () => {
+    set({ isBuffering: false });
+  });
+
+  audioElement.addEventListener('waiting', () => {
+    set({ isBuffering: true });
+  });
+
+  audioElement.addEventListener('stalled', () => {
+    set({ isBuffering: true });
+  });
+
+  audioElement.addEventListener('playing', () => {
+    set({ isBuffering: false, isPlaying: true, playbackError: null });
+  });
+
+  // Detect and handle playback errors cleanly
+  audioElement.addEventListener('error', () => {
+    console.error('Audio stream playback error encountered on:', audioElement.src);
+    set({
+      isBuffering: false,
+      isPlaying: false,
+      playbackError: 'Audio stream currently unavailable or format unsupported.'
+    });
+  });
+
+  // Track completion: triggers next song only after full playback
   audioElement.addEventListener('ended', () => {
     const { repeatMode, nextTrack } = get();
     if (repeatMode === 'one') {
       audioElement.currentTime = 0;
-      audioElement.play();
+      audioElement.play().catch(console.warn);
     } else {
       nextTrack();
     }
@@ -73,20 +105,22 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
   return {
     currentTrack: null,
     isPlaying: false,
+    isBuffering: false,
+    playbackError: null,
     progress: 0,
     duration: 0,
-    volume: 0.8,
+    volume: 0.85,
     isMuted: false,
     shuffle: false,
     repeatMode: 'off',
     queue: [],
     history: [],
-    likedTrackIds: ['telugu-1', 'hindi-1'],
+    likedTrackIds: [], // Clean: user manually likes songs
 
     currentView: 'home',
     selectedPlaylist: null,
     searchQuery: '',
-    isRightSidebarOpen: true,
+    isRightSidebarOpen: false, // Clean minimalist desktop view by default
     isLyricsOpen: false,
 
     playTrack: (track: Track, newQueue?: Track[]) => {
@@ -100,17 +134,19 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
       set({
         currentTrack: track,
         isPlaying: true,
+        isBuffering: true,
+        playbackError: null,
         progress: 0,
         duration: track.duration,
         history: state.currentTrack ? [state.currentTrack, ...state.history] : state.history
       });
 
-      // Point audio element to direct stream or proxy
+      // Stream via robust backend proxy or verified direct link
       const streamSrc = track.audioUrl || `http://localhost:5000/api/stream/play/${encodeURIComponent(track.id)}`;
       audioElement.src = streamSrc;
       audioElement.volume = state.isMuted ? 0 : state.volume;
       audioElement.play().catch(e => {
-        console.warn('Autoplay prevented or stream loading:', e.message);
+        console.warn('Playback initiation note:', e.message);
       });
     },
 
@@ -174,6 +210,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
     },
 
     seek: (seconds: number) => {
+      if (isNaN(seconds) || seconds < 0) return;
       audioElement.currentTime = seconds;
       set({ progress: seconds });
     },
@@ -187,7 +224,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
     toggleMute: () => {
       const { isMuted, volume } = get();
       if (isMuted) {
-        audioElement.volume = volume || 0.8;
+        audioElement.volume = volume || 0.85;
         set({ isMuted: false });
       } else {
         audioElement.volume = 0;
@@ -232,4 +269,3 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
     toggleLyrics: () => set(s => ({ isLyricsOpen: !s.isLyricsOpen }))
   };
 });
-

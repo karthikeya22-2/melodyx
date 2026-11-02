@@ -12,7 +12,7 @@ export const App: React.FC = () => {
   const { currentTab } = useMobilePlayerStore();
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#121212] overflow-hidden select-none relative max-w-md mx-auto shadow-2xl border-x border-white/5">
+    <div className="flex flex-col h-screen w-screen bg-[#090909] text-white overflow-hidden select-none relative max-w-md mx-auto border-x border-[#181818] shadow-2xl">
       {/* Active Screen Tab */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {currentTab === 'home' && <HomeScreen />}
@@ -26,7 +26,7 @@ export const App: React.FC = () => {
       {/* Fixed Bottom Navigation Bar */}
       <BottomNavBar />
 
-      {/* Full-Screen Now Playing Drawer */}
+      {/* Full-Screen Now Playing Drawer with Waveform Scrubber */}
       <FullScreenPlayer />
 
       {/* Bottom Sheet Menu */}
@@ -36,4 +36,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-

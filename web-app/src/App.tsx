@@ -8,12 +8,10 @@ import { LyricsModal } from './components/LyricsModal';
 import { usePlayerStore } from './store/usePlayerStore';
 
 export const App: React.FC = () => {
-  const { currentView, togglePlay, nextTrack, previousTrack, currentTrack } = usePlayerStore();
+  const { currentView, togglePlay, nextTrack, previousTrack } = usePlayerStore();
 
-  // Desktop Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if typing inside an input
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
@@ -33,7 +31,7 @@ export const App: React.FC = () => {
   }, [togglePlay, nextTrack, previousTrack]);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-black overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-[#090909] text-white overflow-hidden select-none">
       {/* 3-Section Desktop Body */}
       <div className="flex flex-1 overflow-hidden p-2 gap-2">
         {/* 1. Left Sidebar */}
@@ -42,18 +40,17 @@ export const App: React.FC = () => {
         {/* 2. Main Content Area */}
         {currentView === 'search' ? <SearchPage /> : <MainContent />}
 
-        {/* 3. Optional Expandable Right Sidebar */}
+        {/* 3. Right Sidebar */}
         <RightSidebar />
       </div>
 
       {/* Persistent Bottom Playback Bar */}
       <BottomPlayer />
 
-      {/* Synchronized Fullscreen Lyrics Modal */}
+      {/* Synchronized Lyrics Modal */}
       <LyricsModal />
     </div>
   );
 };
 
 export default App;
-

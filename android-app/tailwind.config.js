@@ -4,18 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        spotify: {
-          green: '#1DB954',
-          'green-light': '#1ed760',
-          black: '#121212',
-          'dark-base': '#000000',
-          'card-bg': '#181818',
-          'card-hover': '#282828',
-          subtext: '#b3b3b3'
+        app: {
+          bg: '#090909',
+          surface: '#151515',
+          card: '#1D1D1D',
+          'card-hover': '#262626',
+          border: '#282828',
+          accent: '#E50914',
+          'accent-dark': '#B20710',
+          'accent-hover': '#F40612',
+          text: '#FFFFFF',
+          muted: '#A3A3A3',
+          subtle: '#666666'
         }
       }
     }
   },
   plugins: []
 };
-

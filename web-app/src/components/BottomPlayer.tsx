@@ -12,24 +12,20 @@ import {
   Volume1,
   Heart,
   Mic2,
-  ListMusic,
-  Maximize2,
   SidebarClose,
-  SidebarOpen
+  SidebarOpen,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
-
-function formatTime(seconds: number): string {
-  if (isNaN(seconds) || seconds < 0) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-}
+import { WaveformProgressBar } from './WaveformProgressBar';
 
 export const BottomPlayer: React.FC = () => {
   const {
     currentTrack,
     isPlaying,
+    isBuffering,
+    playbackError,
     progress,
     duration,
     volume,
@@ -55,49 +51,65 @@ export const BottomPlayer: React.FC = () => {
   const isLiked = currentTrack ? likedTrackIds.includes(currentTrack.id) : false;
 
   return (
-    <footer className="h-24 bg-black border-t border-white/10 px-4 flex items-center justify-between select-none z-30">
+    <footer className="h-24 bg-[#151515] border-t border-[#262626] px-5 flex items-center justify-between select-none z-30">
       {/* LEFT: Current Track Details */}
       <div className="flex items-center space-x-3 w-1/4 min-w-[200px]">
         {currentTrack ? (
           <>
-            <div className="w-14 h-14 rounded-md overflow-hidden bg-neutral-900 shadow-md shrink-0">
+            <div className="w-14 h-14 rounded overflow-hidden bg-[#1D1D1D] shadow shrink-0 border border-neutral-800 relative">
               <img src={currentTrack.artwork} alt={currentTrack.title} className="w-full h-full object-cover" />
+              {currentTrack.isPreview && (
+                <div className="absolute top-0 right-0 bg-[#E50914] text-[8px] font-bold text-white px-1 rounded-bl">
+                  PREVIEW
+                </div>
+              )}
             </div>
-            <div className="truncate max-w-[180px]">
-              <h4 className="text-sm font-bold text-white truncate hover:underline cursor-pointer">
-                {currentTrack.title}
-              </h4>
+            <div className="truncate max-w-[190px]">
+              <div className="flex items-center space-x-1.5">
+                <h4 className="text-sm font-semibold text-white truncate hover:underline cursor-pointer">
+                  {currentTrack.title}
+                </h4>
+              </div>
               <p className="text-xs text-neutral-400 truncate hover:underline cursor-pointer mt-0.5">
                 {currentTrack.artist}
               </p>
+              {playbackError ? (
+                <p className="text-[10px] text-[#E50914] truncate flex items-center gap-1 mt-0.5">
+                  <AlertCircle className="w-3 h-3" /> {playbackError}
+                </p>
+              ) : isBuffering ? (
+                <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-0.5">
+                  <Loader2 className="w-3 h-3 animate-spin text-[#E50914]" /> Buffering...
+                </p>
+              ) : null}
             </div>
             <button
               onClick={() => toggleLike(currentTrack)}
               className="p-1.5 text-neutral-400 hover:text-white transition-colors"
-              title={isLiked ? 'Remove from your Liked Songs' : 'Save to your Liked Songs'}
+              title={isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
             >
               <Heart
                 className={`w-5 h-5 ${
-                  isLiked ? 'text-[#1DB954] fill-[#1DB954]' : 'hover:scale-110'
+                  isLiked ? 'text-[#E50914] fill-[#E50914]' : 'hover:scale-110'
                 }`}
               />
             </button>
           </>
         ) : (
-          <div className="text-xs text-neutral-500">No song currently loaded</div>
+          <div className="text-xs text-neutral-500">No track selected</div>
         )}
       </div>
 
-      {/* CENTER: Playback Controls & Timeline */}
-      <div className="flex flex-col items-center justify-center max-w-[650px] w-2/4">
-        {/* Control Buttons */}
-        <div className="flex items-center space-x-6 mb-1.5">
+      {/* CENTER: Transport Controls & Waveform Progress Display */}
+      <div className="flex flex-col items-center justify-center max-w-[620px] w-2/4">
+        {/* Buttons */}
+        <div className="flex items-center space-x-6 mb-1">
           <button
             onClick={toggleShuffle}
             className={`transition-colors ${
-              shuffle ? 'text-[#1DB954]' : 'text-neutral-400 hover:text-white'
+              shuffle ? 'text-[#E50914]' : 'text-neutral-400 hover:text-white'
             }`}
-            title="Enable shuffle"
+            title="Shuffle"
           >
             <Shuffle className="w-4 h-4" />
           </button>
@@ -113,7 +125,7 @@ export const BottomPlayer: React.FC = () => {
           <button
             onClick={togglePlay}
             disabled={!currentTrack}
-            className="w-9 h-9 rounded-full bg-white hover:bg-neutral-200 text-black flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+            className="w-9 h-9 rounded-full bg-white hover:bg-neutral-200 text-black flex items-center justify-center shadow transition-transform active:scale-95 disabled:opacity-40"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -134,7 +146,7 @@ export const BottomPlayer: React.FC = () => {
           <button
             onClick={toggleRepeat}
             className={`transition-colors ${
-              repeatMode !== 'off' ? 'text-[#1DB954]' : 'text-neutral-400 hover:text-white'
+              repeatMode !== 'off' ? 'text-[#E50914]' : 'text-neutral-400 hover:text-white'
             }`}
             title={`Repeat: ${repeatMode}`}
           >
@@ -142,27 +154,21 @@ export const BottomPlayer: React.FC = () => {
           </button>
         </div>
 
-        {/* Timeline Slider */}
-        <div className="w-full flex items-center space-x-2 text-[11px] text-neutral-400 font-medium">
-          <span className="w-9 text-right">{formatTime(progress)}</span>
-          <input
-            type="range"
-            min={0}
-            max={duration || 100}
-            value={progress}
-            onChange={e => seek(parseFloat(e.target.value))}
-            className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all"
-          />
-          <span className="w-9 text-left">{formatTime(duration)}</span>
-        </div>
+        {/* Waveform Scrubber Display */}
+        <WaveformProgressBar
+          progress={progress}
+          duration={duration}
+          onSeek={seek}
+          trackId={currentTrack?.id || 'empty'}
+        />
       </div>
 
       {/* RIGHT: Volume, Lyrics & Panel Toggles */}
       <div className="flex items-center justify-end space-x-3 w-1/4 min-w-[200px]">
         <button
           onClick={toggleLyrics}
-          className={`p-1.5 rounded-full transition-colors ${
-            isLyricsOpen ? 'text-[#1DB954]' : 'text-neutral-400 hover:text-white'
+          className={`p-1.5 rounded transition-colors ${
+            isLyricsOpen ? 'text-[#E50914]' : 'text-neutral-400 hover:text-white'
           }`}
           title="Lyrics"
         >
@@ -171,15 +177,15 @@ export const BottomPlayer: React.FC = () => {
 
         <button
           onClick={toggleRightSidebar}
-          className={`p-1.5 rounded-full transition-colors ${
-            isRightSidebarOpen ? 'text-[#1DB954]' : 'text-neutral-400 hover:text-white'
+          className={`p-1.5 rounded transition-colors ${
+            isRightSidebarOpen ? 'text-[#E50914]' : 'text-neutral-400 hover:text-white'
           }`}
-          title="Toggle Now Playing Panel"
+          title="Toggle Info Panel"
         >
           {isRightSidebarOpen ? <SidebarClose className="w-4 h-4" /> : <SidebarOpen className="w-4 h-4" />}
         </button>
 
-        {/* Volume Slider */}
+        {/* Volume */}
         <div className="flex items-center space-x-2">
           <button onClick={toggleMute} className="text-neutral-400 hover:text-white transition-colors">
             {isMuted || volume === 0 ? (
@@ -197,11 +203,10 @@ export const BottomPlayer: React.FC = () => {
             step={0.01}
             value={isMuted ? 0 : volume}
             onChange={e => setVolume(parseFloat(e.target.value))}
-            className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer hover:h-1.5 transition-all"
+            className="w-20 h-1 bg-[#333333] rounded appearance-none cursor-pointer"
           />
         </div>
       </div>
     </footer>
   );
 };
-

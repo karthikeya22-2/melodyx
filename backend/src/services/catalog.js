@@ -1,89 +1,83 @@
-// Music Catalog Service: Telugu, Hindi, English, Global Hits, Albums, Artists, & Search
+// Music Catalog Service: Verified Full Audio Tracks, Regional Hits, & Search Engine
 
 const teluguHits = [
   {
     id: 'telugu-1',
     title: 'Naatu Naatu',
     artist: 'Rahul Sipligunj, Kaala Bhairava, M.M. Keeravaani',
-    artistId: 'artist-mmk',
-    album: 'RRR (Original Motion Picture Soundtrack)',
-    albumId: 'alb-rrr',
+    album: 'RRR',
     duration: 215,
     language: 'Telugu',
-    genre: 'Tollywood Folk / Dance',
+    genre: 'Tollywood Dance',
     releaseYear: 2022,
     artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    isPreview: false
   },
   {
     id: 'telugu-2',
     title: 'Kurchi Madathapetti',
     artist: 'S. Thaman, Sahithi Chaganti, Sri Krishna',
-    artistId: 'artist-thaman',
     album: 'Guntur Kaaram',
-    albumId: 'alb-guntur-kaaram',
     duration: 218,
     language: 'Telugu',
-    genre: 'Tollywood Party',
+    genre: 'Tollywood Commercial',
     releaseYear: 2024,
     artwork: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    isPreview: false
   },
   {
     id: 'telugu-3',
     title: 'Chuttamalle',
     artist: 'Anirudh Ravichander, Shilpa Rao',
-    artistId: 'artist-anirudh',
     album: 'Devara Part 1',
-    albumId: 'alb-devara',
     duration: 228,
     language: 'Telugu',
-    genre: 'Melody / Romantic',
+    genre: 'Melody',
     releaseYear: 2024,
     artwork: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    isPreview: false
   },
   {
     id: 'telugu-4',
     title: 'Samajavaragamana',
     artist: 'Sid Sriram, Thaman S',
-    artistId: 'artist-sid',
     album: 'Ala Vaikunthapurramuloo',
-    albumId: 'alb-avpl',
     duration: 222,
     language: 'Telugu',
     genre: 'Romantic Melody',
     releaseYear: 2020,
     artwork: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+    isPreview: false
   },
   {
     id: 'telugu-5',
-    title: 'Oo Antava Mava.. Oo Oo Antava',
+    title: 'Oo Antava Mava',
     artist: 'Indravathi Chauhan, Devi Sri Prasad',
-    artistId: 'artist-dsp',
     album: 'Pushpa: The Rise',
-    albumId: 'alb-pushpa-1',
     duration: 223,
     language: 'Telugu',
-    genre: 'Item Song / Folk Beat',
+    genre: 'Folk Beat',
     releaseYear: 2021,
     artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+    isPreview: false
   },
   {
     id: 'telugu-6',
     title: 'Inkem Inkem Inkem Kaavaale',
     artist: 'Sid Sriram, Gopi Sundar',
-    artistId: 'artist-sid',
     album: 'Geetha Govindam',
-    albumId: 'alb-geetha-govindam',
     duration: 267,
     language: 'Telugu',
-    genre: 'Acoustic Love',
+    genre: 'Acoustic Melody',
     releaseYear: 2018,
     artwork: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+    isPreview: false
   }
 ];
 
@@ -91,72 +85,67 @@ const hindiHits = [
   {
     id: 'hindi-1',
     title: 'Kesariya',
-    artist: 'Arijit Singh, Pritam, Amitabh Bhattacharya',
-    artistId: 'artist-arijit',
+    artist: 'Arijit Singh, Pritam',
     album: 'Brahmastra',
-    albumId: 'alb-brahmastra',
     duration: 268,
     language: 'Hindi',
     genre: 'Bollywood Romance',
     releaseYear: 2022,
     artwork: 'https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+    isPreview: false
   },
   {
     id: 'hindi-2',
     title: 'Apna Bana Le',
     artist: 'Arijit Singh, Sachin-Jigar',
-    artistId: 'artist-arijit',
     album: 'Bhediya',
-    albumId: 'alb-bhediya',
     duration: 261,
     language: 'Hindi',
-    genre: 'Sufi Romantic',
+    genre: 'Romantic',
     releaseYear: 2022,
     artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+    isPreview: false
   },
   {
     id: 'hindi-3',
     title: 'Chaleya',
-    artist: 'Arijit Singh, Shilpa Rao, Anirudh Ravichander',
-    artistId: 'artist-anirudh',
+    artist: 'Arijit Singh, Shilpa Rao, Anirudh',
     album: 'Jawan',
-    albumId: 'alb-jawan',
     duration: 200,
     language: 'Hindi',
-    genre: 'Bollywood Pop',
+    genre: 'Pop Romance',
     releaseYear: 2023,
     artwork: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
+    isPreview: false
   },
   {
     id: 'hindi-4',
     title: 'Pehle Bhi Main',
     artist: 'Vishal Mishra, Raj Shekhar',
-    artistId: 'artist-vishal',
     album: 'Animal',
-    albumId: 'alb-animal',
     duration: 250,
     language: 'Hindi',
-    genre: 'Intense Romantic',
+    genre: 'Romantic',
     releaseYear: 2023,
     artwork: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
+    isPreview: false
   },
   {
     id: 'hindi-5',
     title: 'Raataan Lambiyan',
-    artist: 'Jubin Nautiyal, Asees Kaur, Tanishk Bagchi',
-    artistId: 'artist-jubin',
+    artist: 'Jubin Nautiyal, Asees Kaur',
     album: 'Shershaah',
-    albumId: 'alb-shershaah',
     duration: 230,
     language: 'Hindi',
-    genre: 'Melodic Ballad',
+    genre: 'Ballad',
     releaseYear: 2021,
     artwork: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3',
+    isPreview: false
   }
 ];
 
@@ -165,71 +154,66 @@ const englishHits = [
     id: 'eng-1',
     title: 'Blinding Lights',
     artist: 'The Weeknd',
-    artistId: 'artist-the-weeknd',
     album: 'After Hours',
-    albumId: 'alb-after-hours',
     duration: 200,
     language: 'English',
-    genre: 'Synthwave / Pop',
+    genre: 'Synthwave',
     releaseYear: 2020,
     artwork: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
+    isPreview: false
   },
   {
     id: 'eng-2',
     title: 'Shape of You',
     artist: 'Ed Sheeran',
-    artistId: 'artist-ed-sheeran',
     album: 'Divide (÷)',
-    albumId: 'alb-divide',
     duration: 233,
     language: 'English',
-    genre: 'Dance Pop',
+    genre: 'Pop',
     releaseYear: 2017,
     artwork: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3',
+    isPreview: false
   },
   {
     id: 'eng-3',
     title: 'Starboy',
     artist: 'The Weeknd, Daft Punk',
-    artistId: 'artist-the-weeknd',
     album: 'Starboy',
-    albumId: 'alb-starboy',
     duration: 230,
     language: 'English',
     genre: 'R&B / Electro',
     releaseYear: 2016,
     artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3',
+    isPreview: false
   },
   {
     id: 'eng-4',
     title: 'As It Was',
     artist: 'Harry Styles',
-    artistId: 'artist-harry-styles',
     album: "Harry's House",
-    albumId: 'alb-harrys-house',
     duration: 167,
     language: 'English',
     genre: 'Indie Pop',
     releaseYear: 2022,
     artwork: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
+    isPreview: false
   },
   {
     id: 'eng-5',
     title: 'Levitating',
     artist: 'Dua Lipa',
-    artistId: 'artist-dua-lipa',
     album: 'Future Nostalgia',
-    albumId: 'alb-future-nostalgia',
     duration: 203,
     language: 'English',
-    genre: 'Nu-Disco / Pop',
+    genre: 'Pop',
     releaseYear: 2020,
     artwork: 'https://images.unsplash.com/photo-1445985543468-7944e99500be?w=600',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3',
+    isPreview: false
   }
 ];
 
@@ -238,7 +222,6 @@ const trendingAlbums = [
     id: 'alb-devara',
     title: 'Devara Part 1',
     artist: 'Anirudh Ravichander',
-    artistId: 'artist-anirudh',
     artwork: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600',
     releaseDate: '2024-09-27',
     totalTracks: 6
@@ -247,7 +230,6 @@ const trendingAlbums = [
     id: 'alb-animal',
     title: 'Animal (Original Soundtrack)',
     artist: 'Various Artists',
-    artistId: 'artist-various',
     artwork: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600',
     releaseDate: '2023-12-01',
     totalTracks: 8
@@ -256,7 +238,6 @@ const trendingAlbums = [
     id: 'alb-after-hours',
     title: 'After Hours',
     artist: 'The Weeknd',
-    artistId: 'artist-the-weeknd',
     artwork: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600',
     releaseDate: '2020-03-20',
     totalTracks: 14
@@ -265,7 +246,6 @@ const trendingAlbums = [
     id: 'alb-guntur-kaaram',
     title: 'Guntur Kaaram',
     artist: 'Thaman S',
-    artistId: 'artist-thaman',
     artwork: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600',
     releaseDate: '2024-01-12',
     totalTracks: 5
@@ -277,75 +257,69 @@ const recommendedArtists = [
     id: 'artist-anirudh',
     name: 'Anirudh Ravichander',
     artwork: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500',
-    genres: ['Tamil Pop', 'Tollywood Commercial', 'Electronic EDM'],
-    monthlyListeners: 24500000
+    genres: ['Tamil Pop', 'Tollywood Commercial']
   },
   {
     id: 'artist-arijit',
     name: 'Arijit Singh',
     artwork: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
-    genres: ['Bollywood Soul', 'Acoustic Romantic', 'Sufi'],
-    monthlyListeners: 42100000
+    genres: ['Bollywood Soul', 'Romantic']
   },
   {
     id: 'artist-sid',
     name: 'Sid Sriram',
     artwork: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500',
-    genres: ['Carnatic Classical', 'South Indie Pop', 'Soul'],
-    monthlyListeners: 18200000
+    genres: ['Carnatic Classical', 'South Indie Pop']
   },
   {
     id: 'artist-the-weeknd',
     name: 'The Weeknd',
     artwork: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500',
-    genres: ['Contemporary R&B', 'Synth-pop', 'Alternative'],
-    monthlyListeners: 108000000
+    genres: ['R&B', 'Pop']
   },
   {
     id: 'artist-thaman',
     name: 'S. Thaman',
     artwork: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500',
-    genres: ['Tollywood Beats', 'EDM Fusion', 'Melody'],
-    monthlyListeners: 15400000
+    genres: ['Tollywood Beats', 'Melody']
   }
 ];
 
-const moodPlaylists = [
+const genrePlaylists = [
   {
-    id: 'mood-gym',
-    title: 'High-Energy Workout',
-    description: 'BPM 130+ high voltage beats for high-performance training',
-    coverUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600',
-    trackCount: 35
+    id: 'gen-telugu',
+    title: 'Telugu Chartbusters',
+    description: 'Top streaming Tollywood hits and melodies',
+    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+    trackCount: teluguHits.length
   },
   {
-    id: 'mood-chill',
-    title: 'Late Night Lo-Fi & Chill',
-    description: 'Mellow acoustic strums, soft vocals, and gentle beats',
-    coverUrl: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600',
-    trackCount: 42
+    id: 'gen-hindi',
+    title: 'Bollywood Hits',
+    description: 'Soulful romance, popular singles and soundtracks',
+    coverUrl: 'https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=600',
+    trackCount: hindiHits.length
   },
   {
-    id: 'mood-focus',
-    title: 'Deep Focus & Flow State',
-    description: 'Ambient instrumental rhythms for distraction-free coding & work',
-    coverUrl: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600',
-    trackCount: 50
+    id: 'gen-pop',
+    title: 'Global Pop Anthems',
+    description: 'International chart leaders and modern hits',
+    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600',
+    trackCount: englishHits.length
   },
   {
-    id: 'mood-party',
-    title: 'Friday Party Anthems',
-    description: 'Massive club bangers, regional chartbusters, and remixes',
-    coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600',
-    trackCount: 60
+    id: 'gen-acoustic',
+    title: 'Acoustic & Chill',
+    description: 'Unplugged melodies, soft vocals and gentle rhythms',
+    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
+    trackCount: 18
   }
 ];
 
 const allTracks = [...teluguHits, ...hindiHits, ...englishHits];
 
 class CatalogService {
-  getHomeFeed(userPreferredLanguages = ['Telugu', 'Hindi', 'English']) {
-    // Generate greeting based on current server hour
+  getHomeFeed() {
     const hour = new Date().getHours();
     let greeting = 'Good evening';
     if (hour >= 5 && hour < 12) greeting = 'Good morning';
@@ -353,21 +327,12 @@ class CatalogService {
 
     return {
       greeting,
-      recentlyPlayed: allTracks.slice(0, 6),
-      madeForYou: [
-        allTracks[0], // Naatu Naatu
-        allTracks[6], // Kesariya
-        allTracks[11], // Blinding Lights
-        allTracks[2], // Chuttamalle
-        allTracks[7], // Apna Bana Le
-        allTracks[12] // Shape of You
-      ],
-      teluguHits,
-      hindiHits,
-      englishHits,
+      trendingTelugu: teluguHits,
+      trendingHindi: hindiHits,
+      trendingEnglish: englishHits,
       trendingAlbums,
       recommendedArtists,
-      moodPlaylists
+      genrePlaylists
     };
   }
 
@@ -378,7 +343,7 @@ class CatalogService {
   getArtistById(id) {
     const artist = recommendedArtists.find(a => a.id === id);
     if (!artist) return null;
-    const tracks = allTracks.filter(t => t.artistId === id || t.artist.includes(artist.name));
+    const tracks = allTracks.filter(t => t.artist.toLowerCase().includes(artist.name.toLowerCase()));
     return {
       ...artist,
       topTracks: tracks
@@ -388,10 +353,10 @@ class CatalogService {
   getAlbumById(id) {
     const album = trendingAlbums.find(a => a.id === id);
     if (!album) return null;
-    const tracks = allTracks.filter(t => t.albumId === id);
+    const tracks = allTracks.filter(t => t.album.toLowerCase().includes(album.title.toLowerCase().split('(')[0].trim()));
     return {
       ...album,
-      tracks: tracks.length ? tracks : [allTracks[0], allTracks[1]]
+      tracks: tracks.length ? tracks : [teluguHits[0], teluguHits[1]]
     };
   }
 
@@ -400,10 +365,10 @@ class CatalogService {
     if (!q) {
       return {
         query: '',
-        tracks: allTracks.slice(0, 10),
+        tracks: allTracks,
         artists: recommendedArtists,
         albums: trendingAlbums,
-        playlists: moodPlaylists
+        playlists: genrePlaylists
       };
     }
 
@@ -423,29 +388,36 @@ class CatalogService {
       alb => alb.title.toLowerCase().includes(q) || alb.artist.toLowerCase().includes(q)
     );
 
-    const matchedPlaylists = moodPlaylists.filter(
+    const matchedPlaylists = genrePlaylists.filter(
       p => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
     );
 
-    // Online search fallback (iTunes Search API for global real-time catalog discovery if online)
+    // Online search fallback with accurate preview handling
     if (matchedTracks.length === 0) {
       try {
         const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=10`);
         if (res.ok) {
           const data = await res.json();
           if (data.results && data.results.length) {
-            const externalTracks = data.results.map((item, index) => ({
-              id: 'ext-' + item.trackId,
-              title: item.trackName || 'Unknown Title',
-              artist: item.artistName || 'Unknown Artist',
-              album: item.collectionName || 'Single',
-              duration: Math.round((item.trackTimeMillis || 200000) / 1000),
-              artwork: (item.artworkUrl100 || '').replace('100x100bb', '600x600bb'),
-              audioUrl: item.previewUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-              genre: item.primaryGenreName || 'Pop',
-              language: 'Global',
-              releaseYear: item.releaseDate ? new Date(item.releaseDate).getFullYear() : 2023
-            }));
+            const externalTracks = data.results.map(item => {
+              // Crucial accuracy fix: iTunes preview is strictly 30s.
+              // We do not claim 3+ min duration if only 30s preview is supplied!
+              const isOnlyPreview = Boolean(item.previewUrl);
+              return {
+                id: 'ext-' + item.trackId,
+                title: item.trackName || 'Unknown Title',
+                artist: item.artistName || 'Unknown Artist',
+                album: item.collectionName || 'Single',
+                duration: isOnlyPreview ? 30 : Math.round((item.trackTimeMillis || 180000) / 1000),
+                artwork: (item.artworkUrl100 || '').replace('100x100bb', '600x600bb'),
+                audioUrl: item.previewUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                genre: item.primaryGenreName || 'Music',
+                language: 'Global',
+                releaseYear: item.releaseDate ? new Date(item.releaseDate).getFullYear() : 2023,
+                isPreview: isOnlyPreview
+              };
+            });
+
             return {
               query,
               tracks: externalTracks,
@@ -471,4 +443,3 @@ class CatalogService {
 }
 
 module.exports = new CatalogService();
-

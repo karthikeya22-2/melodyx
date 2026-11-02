@@ -4,6 +4,8 @@ import { Track } from '../types';
 interface MobilePlayerStore {
   currentTrack: Track | null;
   isPlaying: boolean;
+  isBuffering: boolean;
+  playbackError: string | null;
   progress: number;
   duration: number;
   shuffle: boolean;
@@ -42,7 +44,14 @@ const audioElement = new Audio();
 audioElement.preload = 'auto';
 
 // Android Native MediaSession Integration
-function updateMediaSession(track: Track, isPlaying: boolean, seekAction: (sec: number) => void, toggleAction: () => void, nextAction: () => void, prevAction: () => void) {
+function updateMediaSession(
+  track: Track,
+  isPlaying: boolean,
+  seekAction: (sec: number) => void,
+  toggleAction: () => void,
+  nextAction: () => void,
+  prevAction: () => void
+) {
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
@@ -82,14 +91,41 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
   });
 
   audioElement.addEventListener('loadedmetadata', () => {
-    set({ duration: audioElement.duration || get().currentTrack?.duration || 0 });
+    const realDuration = audioElement.duration;
+    if (realDuration && !isNaN(realDuration) && isFinite(realDuration)) {
+      set({ duration: realDuration, isBuffering: false, playbackError: null });
+    }
+  });
+
+  audioElement.addEventListener('canplay', () => {
+    set({ isBuffering: false });
+  });
+
+  audioElement.addEventListener('waiting', () => {
+    set({ isBuffering: true });
+  });
+
+  audioElement.addEventListener('stalled', () => {
+    set({ isBuffering: true });
+  });
+
+  audioElement.addEventListener('playing', () => {
+    set({ isBuffering: false, isPlaying: true, playbackError: null });
+  });
+
+  audioElement.addEventListener('error', () => {
+    set({
+      isBuffering: false,
+      isPlaying: false,
+      playbackError: 'Audio stream currently unavailable.'
+    });
   });
 
   audioElement.addEventListener('ended', () => {
     const { repeatMode, nextTrack } = get();
     if (repeatMode === 'one') {
       audioElement.currentTime = 0;
-      audioElement.play();
+      audioElement.play().catch(console.warn);
     } else {
       nextTrack();
     }
@@ -98,12 +134,14 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
   return {
     currentTrack: null,
     isPlaying: false,
+    isBuffering: false,
+    playbackError: null,
     progress: 0,
     duration: 0,
     shuffle: false,
     repeatMode: 'off',
     queue: [],
-    likedTrackIds: ['telugu-1'],
+    likedTrackIds: [], // Clean initial state
 
     currentTab: 'home',
     isFullScreenOpen: false,
@@ -122,6 +160,8 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
       set({
         currentTrack: track,
         isPlaying: true,
+        isBuffering: true,
+        playbackError: null,
         progress: 0,
         duration: track.duration
       });
@@ -201,6 +241,7 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
     },
 
     seek: (seconds: number) => {
+      if (isNaN(seconds) || seconds < 0) return;
       audioElement.currentTime = seconds;
       set({ progress: seconds });
     },
@@ -232,4 +273,3 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
     closeOptionsMenu: () => set({ isOptionsMenuOpen: false, selectedTrackForOptions: null })
   };
 });
-

@@ -9,6 +9,7 @@ export interface Track {
   language?: string;
   genre?: string;
   releaseYear?: number;
+  isPreview?: boolean;
 }
 
 export interface Playlist {
@@ -27,4 +28,3 @@ export interface SyncedLyrics {
   lines: { time: number; text: string }[];
   isSynced: boolean;
 }
-
