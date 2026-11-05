@@ -35,7 +35,7 @@ export async function detectActiveHost(): Promise<string> {
 }
 
 /**
- * Universal safe HTTP fetcher:
+ * Universal safe HTTP fetcher (JSON):
  * Uses native Android HTTP on devices (bypassing ALL CORS and WebView restrictions),
  * with standard browser fetch as a fallback.
  */
@@ -51,7 +51,12 @@ export async function queryUrlSafely(url: string, timeoutMs: number = 4000): Pro
         }
       });
       if (res && res.data) {
-        return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+        if (typeof res.data === 'object') return res.data;
+        try {
+          return JSON.parse(res.data);
+        } catch {
+          return null;
+        }
       }
     } catch (e) {
       console.warn('[HTTP] Native CapacitorHttp note:', e);
@@ -64,6 +69,45 @@ export async function queryUrlSafely(url: string, timeoutMs: number = 4000): Pro
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
     if (res.ok) return await res.json();
+  } catch (e) { }
+
+  return null;
+}
+
+/**
+ * Universal safe HTTP fetcher for raw HTML / Text:
+ * Never fails with JSON.parse on HTML pages (Spotify embed, web links, etc.)
+ */
+export async function queryTextSafely(url: string, timeoutMs: number = 6000): Promise<string | null> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const res = await CapacitorHttp.get({
+        url,
+        connectTimeout: timeoutMs,
+        readTimeout: timeoutMs,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      if (res && res.data !== undefined && res.data !== null) {
+        return typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+      }
+    } catch (e) {
+      console.warn('[HTTP] Native queryTextSafely note:', e);
+    }
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    clearTimeout(timer);
+    if (res.ok) return await res.text();
   } catch (e) { }
 
   return null;
@@ -86,6 +130,41 @@ export function decryptSaavnMediaUrl(encryptedUrl: string): string | null {
   } catch (err) {
     return null;
   }
+}
+
+/**
+ * Resolve direct 320kbps Akamai CDN stream URL for ANY track by searching its title and artist.
+ */
+export async function resolveTrackStream(track: { title: string; artist: string }): Promise<string | null> {
+  if (!track || !track.title) return null;
+  const cleanTitle = track.title.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[\u00A0\s]+/g, ' ').trim();
+  const cleanArtist = (track.artist || '').split(/[,&]/)[0].replace(/[\u00A0\s]+/g, ' ').trim();
+  const query = `${cleanTitle} ${cleanArtist}`.trim();
+
+  try {
+    const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&_marker=0&ctx=web6dot0&p=1&n=3&q=${encodeURIComponent(query)}`;
+    const data = await queryUrlSafely(url, 4000);
+    const firstResult = data?.results?.[0];
+    if (firstResult && firstResult.encrypted_media_url) {
+      const decrypted = decryptSaavnMediaUrl(firstResult.encrypted_media_url);
+      if (decrypted) return decrypted;
+    }
+  } catch (e) {
+    console.warn('[STREAM RESOLVER] note:', e);
+  }
+
+  // Fallback search with only title if artist was too specific
+  try {
+    const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&_marker=0&ctx=web6dot0&p=1&n=3&q=${encodeURIComponent(cleanTitle)}`;
+    const data = await queryUrlSafely(url, 4000);
+    const firstResult = data?.results?.[0];
+    if (firstResult && firstResult.encrypted_media_url) {
+      const decrypted = decryptSaavnMediaUrl(firstResult.encrypted_media_url);
+      if (decrypted) return decrypted;
+    }
+  } catch (e) { }
+
+  return null;
 }
 
 // Direct 320kbps Master Tracks (Guaranteed to stream on any device with zero lag)
@@ -537,6 +616,10 @@ export const api = {
     }
 
     throw new Error('Unable to import playlist. Please verify the link is public and try again.');
+  },
+
+  resolveTrackStream(track: { title: string; artist: string }): Promise<string | null> {
+    return resolveTrackStream(track);
   },
 
   async loginWithGoogle(payload: { credential?: string; googleUser?: any }) {

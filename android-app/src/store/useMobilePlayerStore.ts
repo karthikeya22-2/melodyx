@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Track, Playlist } from '../types';
 import { recommendationEngine } from '../services/recommendationEngine';
-import { getApiHost } from '../services/api';
+import { getApiHost, api } from '../services/api';
 import { useAuthStore } from './useAuthStore';
 
 interface MobilePlayerStore {
@@ -162,13 +162,41 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
     const state = get();
     const track = state.currentTrack;
     if (track && (track as any).directStreamUrl && audioElement.src !== (track as any).directStreamUrl) {
-      // Automatic fallback to direct high-bitrate studio CDN URL
       audioElement.src = (track as any).directStreamUrl;
       audioElement.play().catch(() => {
+        // Try on-the-fly resolution
+        api.resolveTrackStream(track).then(stream => {
+          if (stream && audioElement.src !== stream) {
+            (track as any).directStreamUrl = stream;
+            audioElement.src = stream;
+            audioElement.play().catch(console.warn);
+          }
+        }).catch(console.warn);
+      });
+      return;
+    }
+
+    if (track && track.title) {
+      // Dynamic on-the-fly resolution for any track
+      api.resolveTrackStream(track).then(stream => {
+        if (stream && audioElement.src !== stream) {
+          (track as any).directStreamUrl = stream;
+          audioElement.src = stream;
+          audioElement.play().catch(() => {
+            set({ isBuffering: false, isPlaying: false, playbackError: 'Audio stream currently unavailable.' });
+          });
+          return;
+        }
         set({
           isBuffering: false,
           isPlaying: false,
-          playbackError: 'Unable to stream audio. Please check network.'
+          playbackError: 'Audio stream currently unavailable.'
+        });
+      }).catch(() => {
+        set({
+          isBuffering: false,
+          isPlaying: false,
+          playbackError: 'Audio stream currently unavailable.'
         });
       });
       return;
@@ -252,16 +280,28 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
         duration: track.duration
       });
 
-      let streamSrc = (track as any).directStreamUrl || track.audioUrl || `/api/stream/play/${encodeURIComponent(track.id)}`;
-      if (streamSrc.includes('soundhelix.com')) {
-        streamSrc = `/api/stream/play/${encodeURIComponent(track.id)}`;
-      }
-      const host = getApiHost();
-      if (streamSrc.startsWith('/')) {
-        streamSrc = `${host}${streamSrc}`;
+      let streamSrc = (track as any).directStreamUrl || track.audioUrl || '';
+      if (!streamSrc || streamSrc.includes('soundhelix.com') || streamSrc.startsWith('/')) {
+        // Asynchronously resolve direct 320kbps Akamai CDN stream
+        api.resolveTrackStream(track).then(resolved => {
+          if (resolved) {
+            (track as any).directStreamUrl = resolved;
+            track.audioUrl = resolved;
+            const cur = get().currentTrack;
+            if (cur && cur.id === track.id) {
+              audioElement.src = resolved;
+              audioElement.play().catch(console.warn);
+            }
+          }
+        }).catch(console.warn);
+
+        const host = getApiHost();
+        streamSrc = streamSrc ? `${host}${streamSrc}` : `https://aac.saavncdn.com/683/000ab54759049a8451ffcdc6412a0ef6_320.mp4`;
       } else if (streamSrc.startsWith('http://localhost:5000')) {
+        const host = getApiHost();
         streamSrc = streamSrc.replace('http://localhost:5000', host);
       }
+
       audioElement.src = streamSrc;
       audioElement.play().catch(console.warn);
 

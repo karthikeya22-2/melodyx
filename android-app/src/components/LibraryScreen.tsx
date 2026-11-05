@@ -63,7 +63,7 @@ export const LibraryScreen: React.FC = () => {
     const isCustom = customPlaylists.some(p => p.id === selectedPlaylist.id);
     const playlistTracks: Track[] = selectedPlaylist.tracks && selectedPlaylist.tracks.length > 0
       ? selectedPlaylist.tracks
-      : allTracks.slice(0, 10);
+      : [];
 
     const isPlaylistCurrentlyPlaying =
       isPlaying && currentTrack && playlistTracks.some(t => t.id === currentTrack.id);
@@ -151,51 +151,60 @@ export const LibraryScreen: React.FC = () => {
 
         {/* Track List */}
         <div className="px-4 pt-3 space-y-1">
-          {playlistTracks.map((track, idx) => {
-            const isThisPlaying = currentTrack?.id === track.id && isPlaying;
-            return (
-              <div
-                key={track.id}
-                onClick={() => {
-                  if (currentTrack?.id === track.id) togglePlay();
-                  else playTrack(track, playlistTracks);
-                }}
-                className={`flex items-center space-x-3 p-2 rounded-xl active:bg-[#1A1A20] cursor-pointer transition-colors ${
-                  isThisPlaying ? 'bg-[#131316] border border-white/5' : ''
-                }`}
-              >
-                <span className="text-xs font-mono text-[#666] w-4 text-center shrink-0">
-                  {idx + 1}
-                </span>
+          {playlistTracks.length > 0 ? (
+            playlistTracks.map((track, idx) => {
+              const isThisPlaying = currentTrack?.id === track.id && isPlaying;
+              return (
+                <div
+                  key={track.id}
+                  onClick={() => {
+                    if (currentTrack?.id === track.id) togglePlay();
+                    else playTrack(track, playlistTracks);
+                  }}
+                  className={`flex items-center space-x-3 p-2 rounded-xl active:bg-[#1A1A20] cursor-pointer transition-colors ${
+                    isThisPlaying ? 'bg-[#131316] border border-white/5' : ''
+                  }`}
+                >
+                  <span className="text-xs font-mono text-[#666] w-4 text-center shrink-0">
+                    {idx + 1}
+                  </span>
 
-                <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-[#1A1A20] relative shadow-sm ring-1 ring-white/5">
-                  <img
-                    src={track.artwork}
-                    alt={track.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {isThisPlaying && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                    </div>
-                  )}
+                  <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-[#1A1A20] relative shadow-sm ring-1 ring-white/5">
+                    <img
+                      src={track.artwork}
+                      alt={track.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {isThisPlaying && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="truncate flex-1">
+                    <h4 className={`text-xs font-bold truncate ${isThisPlaying ? 'text-white font-extrabold drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-white'}`}>
+                      {track.title}
+                    </h4>
+                    <p className="text-[10px] text-[#94A3B8] truncate mt-0.5">
+                      {track.artist}
+                    </p>
+                  </div>
+
+                  <span className="text-[10px] text-[#666] font-mono shrink-0">
+                    {formatDuration(track.duration)}
+                  </span>
                 </div>
-
-                <div className="truncate flex-1">
-                  <h4 className={`text-xs font-bold truncate ${isThisPlaying ? 'text-white font-extrabold drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-white'}`}>
-                    {track.title}
-                  </h4>
-                  <p className="text-[10px] text-[#94A3B8] truncate mt-0.5">
-                    {track.artist}
-                  </p>
-                </div>
-
-                <span className="text-[10px] text-[#666] font-mono shrink-0">
-                  {formatDuration(track.duration)}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div className="py-16 text-center space-y-2">
+              <p className="text-sm font-bold text-white">No songs found in this playlist</p>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                Make sure the playlist link is public and contains playable songs.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );

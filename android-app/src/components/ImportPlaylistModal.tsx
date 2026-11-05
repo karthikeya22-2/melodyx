@@ -36,6 +36,9 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
 
     try {
       const imported = await api.importPlaylist(url.trim());
+      if (!imported || !imported.tracks || imported.tracks.length === 0) {
+        throw new Error('No songs could be extracted from this playlist. Make sure the playlist is public and contains playable songs.');
+      }
       playlistStorage.savePlaylist(imported);
       setSuccessPlaylist(imported);
 
@@ -93,18 +96,21 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
             <div className="relative flex items-center">
               <Link2 className="absolute left-3 w-4 h-4 text-[#888]" />
               <input
-                type="url"
+                type="text"
                 value={url}
                 onChange={e => {
                   setUrl(e.target.value);
                   if (error) setError(null);
                 }}
-                placeholder="Paste Spotify, JioSaavn, YouTube, Apple Music or web link"
+                placeholder="Paste link (Spotify, JioSaavn, YouTube) or song names"
                 className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/40 focus:outline-none rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#666]"
                 disabled={isLoading}
                 autoFocus
               />
             </div>
+            <p className="text-[10px] text-slate-400">
+              Supports public playlist links from Spotify, JioSaavn, YouTube, Apple Music, or comma-separated song titles.
+            </p>
           </div>
 
           {/* Error Message */}
