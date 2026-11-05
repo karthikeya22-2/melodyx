@@ -262,7 +262,7 @@ export const HomeScreen: React.FC = () => {
           renderCarousel('Hindi Hits', feed.trendingHindi || [])}
 
         {(selectedFilter === 'all' || selectedFilter === 'english') &&
-          renderCarousel('Global Pop Anthems', feed.trendingEnglish || [])}
+          renderCarousel('Popular English Songs', feed.trendingEnglish || [])}
 
         {/* 5. Trending Albums: Clickable to play immediately */}
         <section className="space-y-3">

@@ -13,7 +13,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { recommendationEngine } from '../services/recommendationEngine';
-import { api, getApiHost, setCustomApiHost } from '../services/api';
+import { api } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const SettingsScreen: React.FC = () => {
@@ -21,9 +21,6 @@ export const SettingsScreen: React.FC = () => {
   const [audioQuality, setAudioQuality] = useState<'very-high' | 'high' | 'normal'>('very-high');
   const [normalizeVolume, setNormalizeVolume] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [serverHost, setServerHost] = useState(getApiHost());
-  const [isEditingServer, setIsEditingServer] = useState(false);
-  const [showDevSettings, setShowDevSettings] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<{
     checked: boolean;
@@ -237,57 +234,6 @@ export const SettingsScreen: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Advanced Developer Settings (Server URL) - Hidden by default for clean consumer experience */}
-      <div className="space-y-2 pt-1 border-t border-white/5">
-        <button
-          type="button"
-          onClick={() => setShowDevSettings(!showDevSettings)}
-          className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] text-[#64748B] hover:text-[#94A3B8] transition-colors rounded-lg hover:bg-white/5"
-        >
-          <span>Developer Options (Backend Server URL)</span>
-          <span className="font-bold">{showDevSettings ? '▲ Hide' : '▼ Show'}</span>
-        </button>
-
-        {showDevSettings && (
-          <div className="bg-[#131316] p-4 rounded-xl border border-white/10 space-y-3 animate-fadeIn">
-            <div className="flex items-center justify-between">
-              <div className="truncate">
-                <p className="text-xs font-semibold text-white">Active Backend Host</p>
-                <p className="text-[11px] text-[#94A3B8] truncate max-w-[200px]">{serverHost}</p>
-              </div>
-              <button
-                onClick={() => setIsEditingServer(!isEditingServer)}
-                className="px-3 py-1 bg-white/10 text-white rounded-md text-xs font-semibold hover:bg-white/20 transition-colors shrink-0"
-              >
-                {isEditingServer ? 'Cancel' : 'Change'}
-              </button>
-            </div>
-
-            {isEditingServer && (
-              <div className="space-y-2 pt-2 border-t border-[#1A1A20]">
-                <input
-                  type="text"
-                  value={serverHost}
-                  onChange={e => setServerHost(e.target.value)}
-                  placeholder="https://your-melodyx-api.onrender.com"
-                  className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/40 focus:outline-none rounded-lg px-3 py-2 text-xs text-white"
-                />
-                <button
-                  onClick={() => {
-                    setCustomApiHost(serverHost.trim());
-                    setIsEditingServer(false);
-                    showToast('Server host updated');
-                  }}
-                  className="w-full py-2 bg-gradient-to-r from-white via-slate-100 to-slate-300 text-black font-extrabold rounded-lg text-xs transition-all active:scale-98"
-                >
-                  Save Server Host
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Storage and History Section */}

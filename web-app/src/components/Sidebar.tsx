@@ -17,27 +17,12 @@ export const Sidebar: React.FC = () => {
 
   const curatedPlaylists = [
     {
-      id: 'gen-telugu',
-      title: 'Telugu Chartbusters',
-      subtitle: 'Playlist • Tollywood Hits',
-      coverUrl: 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg'
-    },
-    {
-      id: 'gen-hindi',
-      title: 'Bollywood Romance',
-      subtitle: 'Playlist • Arijit & More',
-      coverUrl: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg'
-    },
-    {
-      id: 'gen-pop',
-      title: 'Global Pop Anthems',
-      subtitle: 'Playlist • Top 50 Global',
-      coverUrl: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg'
-    },
-    {
       id: 'gen-acoustic',
       title: 'Acoustic & Chill',
       subtitle: 'Playlist • Unplugged Melodies',
+      coverUrl: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg'
+    }
+  ];
       coverUrl: 'https://c.saavncdn.com/237/Geetha-Govindam-Telugu-2018-20180921-500x500.jpg'
     }
   ];

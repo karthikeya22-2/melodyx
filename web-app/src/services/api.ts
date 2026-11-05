@@ -158,10 +158,7 @@ export const api = {
         { id: 'artist-arijit', name: 'Arijit Singh', artwork: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg', genres: ['Bollywood Soul'], monthlyListeners: 42100000 },
         { id: 'artist-the-weeknd', name: 'The Weeknd', artwork: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg', genres: ['R&B', 'Pop'], monthlyListeners: 108000000 }
       ],
-      genrePlaylists: [
-        { id: 'gen-telugu', title: 'Telugu Chartbusters', description: 'Top streaming Tollywood hits and melodies', coverUrl: 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg', trackCount: fallbackTelugu.length },
-        { id: 'gen-hindi', title: 'Bollywood Hits', description: 'Soulful romance, popular singles and soundtracks', coverUrl: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg', trackCount: fallbackHindi.length }
-      ]
+      genrePlaylists: []
     };
   },
 

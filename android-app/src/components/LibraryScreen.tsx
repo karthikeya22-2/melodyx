@@ -11,7 +11,8 @@ import {
   Shuffle,
   Trash2,
   Sparkles,
-  Music2
+  Music2,
+  Clock
 } from 'lucide-react';
 import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
 import { api, playlistStorage } from '../services/api';
@@ -46,41 +47,22 @@ export const LibraryScreen: React.FC = () => {
     setCustomPlaylists(playlistStorage.getPlaylists());
   }, []);
 
-  const curatedPlaylists = [
-    {
-      id: 'gen-telugu',
-      title: 'Telugu Chartbusters',
-      subtitle: 'Playlist • SoundWave',
-      coverUrl: 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg'
-    },
-    {
-      id: 'gen-hindi',
-      title: 'Bollywood Romance',
-      subtitle: 'Playlist • SoundWave',
-      coverUrl: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg'
-    },
-    {
-      id: 'gen-pop',
-      title: 'Global Pop Anthems',
-      subtitle: 'Playlist • SoundWave',
-      coverUrl: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg'
-    }
+  const allTracks: Track[] = [
+    ...(feed?.trendingTelugu || []),
+    ...(feed?.trendingHindi || []),
+    ...(feed?.trendingEnglish || [])
   ];
+
+  const recentlyPlayedTracks = recommendationEngine.getRecentlyPlayed(allTracks);
 
   // ==========================================
   // PLAYLIST DETAIL VIEW
   // ==========================================
   if (selectedPlaylist) {
-    const isCurated = curatedPlaylists.some(p => p.id === selectedPlaylist.id);
+    const isCustom = customPlaylists.some(p => p.id === selectedPlaylist.id);
     const playlistTracks: Track[] = selectedPlaylist.tracks && selectedPlaylist.tracks.length > 0
       ? selectedPlaylist.tracks
-      : selectedPlaylist.id?.includes('telugu')
-      ? feed?.trendingTelugu || []
-      : selectedPlaylist.id?.includes('hindi')
-      ? feed?.trendingHindi || []
-      : selectedPlaylist.id?.includes('pop')
-      ? feed?.trendingEnglish || []
-      : feed?.trendingTelugu || [];
+      : allTracks.slice(0, 10);
 
     const isPlaylistCurrentlyPlaying =
       isPlaying && currentTrack && playlistTracks.some(t => t.id === currentTrack.id);
@@ -97,7 +79,7 @@ export const LibraryScreen: React.FC = () => {
             <span className="text-xs font-bold">Library</span>
           </button>
 
-          {!isCurated && (
+          {isCustom && (
             <button
               onClick={() => {
                 if (confirm(`Remove "${selectedPlaylist.title}" from library?`)) {
@@ -351,39 +333,32 @@ export const LibraryScreen: React.FC = () => {
           </div>
         ))}
 
-        {/* Curated Playlists */}
-        {curatedPlaylists.map(pl => (
+        {/* Recently Played Playlist */}
+        {recentlyPlayedTracks.length > 0 && (
           <div
-            key={pl.id}
             onClick={() => {
-              const tracks = pl.id.includes('telugu')
-                ? feed?.trendingTelugu || []
-                : pl.id.includes('hindi')
-                ? feed?.trendingHindi || []
-                : feed?.trendingEnglish || [];
-
               setSelectedPlaylist({
-                id: pl.id,
-                title: pl.title,
-                description: pl.subtitle,
-                coverUrl: pl.coverUrl,
-                trackCount: tracks.length,
-                tracks
+                id: 'recently-played',
+                title: 'Recently Played',
+                description: 'Songs you listened to recently',
+                coverUrl: recentlyPlayedTracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+                trackCount: recentlyPlayedTracks.length,
+                tracks: recentlyPlayedTracks
               });
             }}
             className="flex items-center space-x-3 p-1.5 rounded-xl active:bg-[#1A1A20] cursor-pointer transition-colors"
           >
-            <img
-              src={pl.coverUrl}
-              alt={pl.title}
-              className="w-14 h-14 rounded-xl object-cover shrink-0 shadow"
-            />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6 text-slate-300" />
+            </div>
             <div className="truncate flex-1">
-              <h3 className="font-bold text-xs text-white truncate">{pl.title}</h3>
-              <p className="text-[10px] text-[#94A3B8] mt-0.5">{pl.subtitle}</p>
+              <h3 className="font-bold text-xs text-white truncate">Recently Played</h3>
+              <p className="text-[10px] text-[#94A3B8] mt-0.5">
+                🕒 History • {recentlyPlayedTracks.length} {recentlyPlayedTracks.length === 1 ? 'song' : 'songs'}
+              </p>
             </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Import Modal */}

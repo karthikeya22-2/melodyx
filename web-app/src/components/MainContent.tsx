@@ -715,7 +715,7 @@ export const MainContent: React.FC = () => {
       {(activeCategory === 'all' || activeCategory === 'english') && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white tracking-tight">Global Pop Anthems</h2>
+            <h2 className="text-xl font-bold text-white tracking-tight">English & Global Hits</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {(feed.trendingEnglish || []).slice(0, 6).map((t: Track) => renderCard(t, feed.trendingEnglish))}

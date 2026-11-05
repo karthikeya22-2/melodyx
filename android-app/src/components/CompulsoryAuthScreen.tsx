@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, CheckCircle2, AlertCircle, Mail, User, ShieldCheck, Lock, Headphones, ArrowRight, Zap } from 'lucide-react';
+import { Sparkles, CheckCircle2, AlertCircle, Mail, User, ShieldCheck, Lock, Headphones, ArrowRight, Trash2 } from 'lucide-react';
 import { useAuthStore, AuthUser } from '../store/useAuthStore';
 import { api } from '../services/api';
 
@@ -27,34 +27,18 @@ interface SavedAccount {
 
 const RECENT_ACCOUNTS_KEY = 'melodyx_recent_google_accounts';
 
-const PRESET_ACCOUNTS: SavedAccount[] = [
-  {
-    email: 'karthikeya789273@gmail.com',
-    name: 'Karthikeya',
-    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Karthikeya',
-    lastUsed: Date.now()
-  },
-  {
-    email: 'tirumalakarthikeya@gmail.com',
-    name: 'Karthikeya (Personal)',
-    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=TK',
-    lastUsed: Date.now() - 1000
-  }
-];
-
 export const CompulsoryAuthScreen: React.FC = () => {
   const { login } = useAuthStore();
-  const [googleEmail, setGoogleEmail] = useState('karthikeya789273@gmail.com');
-  const [displayName, setDisplayName] = useState('Karthikeya');
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [recentAccounts, setRecentAccounts] = useState<SavedAccount[]>(PRESET_ACCOUNTS);
-  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [recentAccounts, setRecentAccounts] = useState<SavedAccount[]>([]);
 
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
-  // Load saved accounts from localStorage or fall back to preset accounts
+  // Load ONLY user's genuine saved accounts from localStorage on this device
   useEffect(() => {
     try {
       const saved = localStorage.getItem(RECENT_ACCOUNTS_KEY);
@@ -62,13 +46,11 @@ export const CompulsoryAuthScreen: React.FC = () => {
         const parsed: SavedAccount[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setRecentAccounts(parsed);
-          return;
         }
       }
     } catch (e) {
       console.warn('Could not read cached accounts:', e);
     }
-    setRecentAccounts(PRESET_ACCOUNTS);
   }, []);
 
   const saveAccountToRecent = (user: AuthUser) => {
@@ -90,15 +72,32 @@ export const CompulsoryAuthScreen: React.FC = () => {
     }
   };
 
+  const removeRecentAccount = (emailToRemove: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const updated = recentAccounts.filter(acc => acc.email.toLowerCase() !== emailToRemove.toLowerCase());
+      localStorage.setItem(RECENT_ACCOUNTS_KEY, JSON.stringify(updated));
+      setRecentAccounts(updated);
+    } catch (e) { }
+  };
+
   // Safe login that always succeeds and lets the user into the app
-  const performGoogleLogin = async (targetEmail: string, targetName?: string, targetAvatar?: string) => {
-    const trimmedEmail = (targetEmail || googleEmail || 'karthikeya789273@gmail.com').trim().toLowerCase();
-    const resolvedName = (targetName || displayName || trimmedEmail.split('@')[0] || 'Karthikeya').trim();
+  const performGoogleLogin = async (targetEmail?: string, targetName?: string, targetAvatar?: string) => {
+    const rawEmail = (targetEmail || googleEmail).trim();
+
+    if (!rawEmail) {
+      setError('Please enter your personal Google email address to continue.');
+      return;
+    }
+
+    // Auto-complete @gmail.com if user only entered their username
+    const trimmedEmail = rawEmail.includes('@') ? rawEmail.toLowerCase() : `${rawEmail.toLowerCase()}@gmail.com`;
+    const resolvedName = (targetName || displayName || trimmedEmail.split('@')[0] || 'Melodyx User').trim();
     const resolvedAvatar = targetAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(resolvedName)}`;
 
     setIsLoading(true);
     setError(null);
-    setSuccessMsg(`Signing in as ${resolvedName}...`);
+    setSuccessMsg(`Welcome, ${resolvedName}! Signing in...`);
 
     const localUser: AuthUser = {
       id: 'usr-g-' + Date.now(),
@@ -133,7 +132,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
       saveAccountToRecent(localUser);
       login(localUser, localToken);
       setIsLoading(false);
-    }, 350);
+    }, 250);
   };
 
   // Optional official Google Identity Services mounting (if supported on device)
@@ -149,7 +148,9 @@ export const CompulsoryAuthScreen: React.FC = () => {
                 saveAccountToRecent(res.user);
                 login(res.user, res.token);
               } catch (e) {
-                performGoogleLogin('karthikeya789273@gmail.com', 'Karthikeya');
+                if (googleEmail) {
+                  performGoogleLogin(googleEmail, displayName);
+                }
               }
             }
           },
@@ -170,7 +171,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
         console.warn('GSI init notice:', err);
       }
     }
-  }, [login]);
+  }, [login, googleEmail, displayName]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0A0C] overflow-y-auto select-none">
@@ -200,13 +201,13 @@ export const CompulsoryAuthScreen: React.FC = () => {
 
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700/60 text-slate-300 text-[10px] font-bold">
             <Lock className="w-3 h-3 text-slate-400" />
-            <span>Google Account Sign-In</span>
+            <span>Sign In with Your Google Account</span>
           </div>
         </div>
 
         {/* Informational subtitle */}
         <p className="text-[11px] text-[#A0AEC0] leading-relaxed">
-          Sign in with your Google account to unlock full streaming, lossless audio, and synchronized lyrics.
+          Enter your personal Google email to start streaming ad-free music with high-fidelity lossless audio.
         </p>
 
         {error && (
@@ -223,12 +224,55 @@ export const CompulsoryAuthScreen: React.FC = () => {
           </div>
         )}
 
-        {/* PRIMARY ACTION: Instant 1-Click Google Sign-In */}
-        <div className="space-y-2.5 pt-1">
+        {/* Form Inputs: Personal Google Account Entry */}
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            performGoogleLogin();
+          }}
+          className="space-y-3 text-left pt-1"
+        >
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-[#CBD5E1]">
+              Personal Google Email <span className="text-red-400">*</span>
+            </label>
+            <div className="relative flex items-center">
+              <Mail className="absolute left-3 w-4 h-4 text-[#777]" />
+              <input
+                type="email"
+                value={googleEmail}
+                onChange={e => {
+                  setGoogleEmail(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="your.name@gmail.com"
+                required
+                className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/60 focus:outline-none rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#666] shadow-inner"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-[#CBD5E1]">
+              Your Name (Optional)
+            </label>
+            <div className="relative flex items-center">
+              <User className="absolute left-3 w-4 h-4 text-[#777]" />
+              <input
+                type="text"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="Your Name"
+                className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/60 focus:outline-none rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#666] shadow-inner"
+              />
+            </div>
+          </div>
+
+          {/* PRIMARY BUTTON: Continue with Google */}
           <button
-            onClick={() => performGoogleLogin(googleEmail, displayName)}
+            type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:brightness-105 active:scale-98 text-black font-extrabold text-xs shadow-xl shadow-white/10 flex items-center justify-between transition-all"
+            className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:brightness-105 active:scale-98 text-black font-extrabold text-xs shadow-xl shadow-white/10 flex items-center justify-between transition-all"
           >
             <div className="flex items-center space-x-2.5">
               <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
@@ -251,7 +295,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
                   />
                 </svg>
               </div>
-              <span className="font-bold text-xs tracking-tight">Sign In with Google</span>
+              <span className="font-bold text-xs tracking-tight">Continue to Melodyx</span>
             </div>
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -259,104 +303,58 @@ export const CompulsoryAuthScreen: React.FC = () => {
               <ArrowRight className="w-4 h-4 text-black" />
             )}
           </button>
-        </div>
+        </form>
 
-        {/* Quick Account Chips */}
-        <div className="space-y-1.5 pt-1 text-left">
-          <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wider text-center">
-            Or Tap Your Google Account:
-          </p>
-          <div className="space-y-1">
-            {recentAccounts.map(acc => (
-              <button
-                key={acc.email}
-                onClick={() => performGoogleLogin(acc.email, acc.name, acc.avatarUrl)}
-                disabled={isLoading}
-                className="w-full flex items-center justify-between p-2 rounded-xl bg-[#1A1A20] hover:bg-[#22222A] border border-white/5 hover:border-white/20 transition-all text-left shadow active:scale-98"
-              >
-                <div className="flex items-center space-x-2 truncate">
-                  {acc.avatarUrl ? (
-                    <img src={acc.avatarUrl} alt={acc.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
-                      {acc.name ? acc.name.charAt(0).toUpperCase() : 'G'}
+        {/* Saved Accounts on THIS Device Only (if any exist) */}
+        {recentAccounts.length > 0 && (
+          <div className="space-y-1.5 pt-2 text-left border-t border-white/10">
+            <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wider text-center">
+              Or Choose Previous Account:
+            </p>
+            <div className="space-y-1.5">
+              {recentAccounts.map(acc => (
+                <div
+                  key={acc.email}
+                  onClick={() => performGoogleLogin(acc.email, acc.name, acc.avatarUrl)}
+                  className="w-full flex items-center justify-between p-2 rounded-xl bg-[#1A1A20] hover:bg-[#22222A] border border-white/5 hover:border-white/20 transition-all cursor-pointer text-left shadow active:scale-98"
+                >
+                  <div className="flex items-center space-x-2 truncate">
+                    {acc.avatarUrl ? (
+                      <img src={acc.avatarUrl} alt={acc.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                        {acc.name ? acc.name.charAt(0).toUpperCase() : 'G'}
+                      </div>
+                    )}
+                    <div className="truncate">
+                      <p className="text-[11px] font-bold text-white truncate">{acc.name || 'Google User'}</p>
+                      <p className="text-[9px] text-[#888] truncate">{acc.email}</p>
                     </div>
-                  )}
-                  <div className="truncate">
-                    <p className="text-[11px] font-bold text-white truncate">{acc.name || 'Google User'}</p>
-                    <p className="text-[9px] text-[#888] truncate">{acc.email}</p>
+                  </div>
+                  <div className="flex items-center space-x-1 shrink-0">
+                    <span className="text-[9px] font-bold text-slate-300 px-2 py-0.5 bg-white/5 rounded-full">
+                      Sign In
+                    </span>
+                    <button
+                      type="button"
+                      onClick={e => removeRecentAccount(acc.email, e)}
+                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
-                <span className="text-[9px] font-bold text-slate-300 px-2.5 py-1 bg-white/5 rounded-full shrink-0">
-                  Tap to Enter
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Custom Email Entry */}
-        <div className="space-y-2 pt-1 border-t border-white/10">
-          <button
-            type="button"
-            onClick={() => setShowCustomInput(!showCustomInput)}
-            className="text-[10px] font-semibold text-slate-400 hover:text-white transition-colors underline-offset-4 hover:underline flex items-center justify-center w-full space-x-1"
-          >
-            <span>{showCustomInput ? '▲ Hide Custom Email' : '▼ Use a Different Google Email'}</span>
-          </button>
-
-          {showCustomInput && (
-            <div className="space-y-2 text-left animate-fadeIn pt-1">
-              <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-[#A0AEC0]">
-                  Google Email Address
-                </label>
-                <div className="relative flex items-center">
-                  <Mail className="absolute left-2.5 w-3.5 h-3.5 text-[#777]" />
-                  <input
-                    type="email"
-                    value={googleEmail}
-                    onChange={e => setGoogleEmail(e.target.value)}
-                    placeholder="your.email@gmail.com"
-                    className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/50 focus:outline-none rounded-xl pl-8 pr-2.5 py-2 text-xs text-white placeholder-[#666]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-[#A0AEC0]">
-                  Your Name
-                </label>
-                <div className="relative flex items-center">
-                  <User className="absolute left-2.5 w-3.5 h-3.5 text-[#777]" />
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/50 focus:outline-none rounded-xl pl-8 pr-2.5 py-2 text-xs text-white placeholder-[#666]"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => performGoogleLogin(googleEmail, displayName)}
-                disabled={isLoading}
-                className="w-full py-2 rounded-xl bg-gradient-to-r from-slate-200 via-white to-slate-200 text-black font-extrabold text-xs shadow-lg active:scale-98 transition-all flex items-center justify-center space-x-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-black" />
-                <span>Enter Melodyx with this Email</span>
-              </button>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Hidden GSI Container if device supports it */}
         <div ref={googleBtnRef} className="hidden" />
 
         {/* Trust Badges */}
-        <div className="pt-1.5 border-t border-white/10 flex items-center justify-center space-x-3 text-[9px] text-[#64748B]">
+        <div className="pt-2 border-t border-white/10 flex items-center justify-center space-x-3 text-[9px] text-[#64748B]">
           <span className="flex items-center space-x-1">
             <ShieldCheck className="w-3 h-3 text-emerald-400" />
             <span>Google Verified</span>
@@ -364,7 +362,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
           <span>•</span>
           <span className="flex items-center space-x-1">
             <Headphones className="w-3 h-3 text-slate-400" />
-            <span>High Bitrate</span>
+            <span>320kbps Lossless</span>
           </span>
           <span>•</span>
           <span>Ad-Free</span>

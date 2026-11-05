@@ -61,8 +61,8 @@ export const SearchScreen: React.FC = () => {
     setSearchHistory([]);
   };
 
-  // Limit display strictly to top 2-3 most relevant results
-  const tracks: Track[] = (results?.tracks || []).slice(0, 3);
+  // Display all relevant search matches
+  const tracks: Track[] = (results?.tracks || []).slice(0, 30);
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0A0A0C] select-none px-4 pt-4 pb-28 touch-scroll space-y-5">

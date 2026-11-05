@@ -157,6 +157,21 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
   });
 
   audioElement.addEventListener('error', () => {
+    const state = get();
+    const track = state.currentTrack;
+    if (track && (track as any).directStreamUrl && audioElement.src !== (track as any).directStreamUrl) {
+      // Automatic fallback to direct high-bitrate studio CDN URL
+      audioElement.src = (track as any).directStreamUrl;
+      audioElement.play().catch(() => {
+        set({
+          isBuffering: false,
+          isPlaying: false,
+          playbackError: 'Unable to stream audio. Please check network.'
+        });
+      });
+      return;
+    }
+
     set({
       isBuffering: false,
       isPlaying: false,
