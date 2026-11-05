@@ -99,3 +99,4 @@ window.APP_CONFIG = {
     }
   ]
 };
+

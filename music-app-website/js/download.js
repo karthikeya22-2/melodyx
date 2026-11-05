@@ -74,3 +74,4 @@ function showDownloadNotice(message, duration = 5000) {
     }
   }, duration);
 }
+

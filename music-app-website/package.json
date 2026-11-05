@@ -1,0 +1,12 @@
+{
+  "name": "melodyx-website",
+  "version": "2.1.0",
+  "description": "Official Melodyx Music Streaming Website and Android APK Download Portal",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["melodyx", "music", "android", "apk"],
+  "author": "Melodyx Team",
+  "license": "ISC"
+}
