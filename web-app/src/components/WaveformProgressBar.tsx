@@ -6,6 +6,7 @@ interface WaveformProps {
   onSeek: (seconds: number) => void;
   trackId?: string;
   barCount?: number;
+  isPlaying?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -20,13 +21,14 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
   duration,
   onSeek,
   trackId = 'default',
-  barCount = 52
+  barCount = 64,
+  isPlaying = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverPosition, setHoverPosition] = useState<number | null>(null);
 
-  // Generate a consistent, organic waveform amplitude pattern per track
+  // Generate consistent waveform pattern from trackId
   const bars = useMemo(() => {
     let seed = 0;
     for (let i = 0; i < trackId.length; i++) {
@@ -35,16 +37,15 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
 
     const heights: number[] = [];
     for (let i = 0; i < barCount; i++) {
-      // Natural music structure curve: intro -> build -> chorus -> bridge -> outro
       const section = i / barCount;
       const wave1 = Math.sin(section * Math.PI * 3);
       const wave2 = Math.cos(section * Math.PI * 7);
       seed = (seed * 9301 + 49297) % 233280;
       const pseudoRandom = seed / 233280;
-      
+
       const heightPercent = Math.min(
         100,
-        Math.max(18, Math.round(35 + wave1 * 25 + wave2 * 15 + pseudoRandom * 25))
+        Math.max(16, Math.round(30 + wave1 * 28 + wave2 * 18 + pseudoRandom * 24))
       );
       heights.push(heightPercent);
     }
@@ -74,13 +75,13 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
   const activeBarIndex = Math.floor(playRatio * barCount);
 
   return (
-    <div className="w-full flex items-center space-x-3 select-none">
+    <div className="w-full flex items-center space-x-2.5 select-none">
       {/* Current Time */}
-      <span className="text-[11px] font-mono text-neutral-400 w-10 text-right shrink-0">
+      <span className="text-[11px] font-mono text-[#B3B3B3] w-10 text-right shrink-0">
         {formatTime(progress)}
       </span>
 
-      {/* Waveform Canvas Container */}
+      {/* Waveform Scrubber */}
       <div
         ref={containerRef}
         onClick={handleSeekFromEvent}
@@ -94,10 +95,10 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
           setHoverPosition(null);
         }}
         onMouseMove={handleMouseMove}
-        className="relative flex-1 h-8 flex items-center justify-between cursor-pointer group py-1"
-        title="Seek via waveform"
+        className="relative flex-1 h-7 flex items-center justify-between cursor-pointer group py-1"
+        title="Seek via animated waveform"
       >
-        {/* Vertical Waveform Bars */}
+        {/* Bars */}
         <div className="w-full h-full flex items-center justify-between gap-[2px]">
           {bars.map((height, idx) => {
             const isPlayed = idx <= activeBarIndex;
@@ -112,9 +113,11 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
                   style={{ height: `${height}%` }}
                   className={`w-full rounded-full transition-colors duration-100 ${
                     isPlayed
-                      ? 'bg-[#E50914]'
-                      : 'bg-[#333333] group-hover:bg-[#444444]'
-                  } ${isCurrent ? 'ring-1 ring-white/60 brightness-125' : ''}`}
+                      ? 'bg-gradient-to-t from-slate-300 to-white'
+                      : 'bg-white/10 group-hover:bg-white/20'
+                  } ${isCurrent ? 'ring-1 ring-white shadow-[0_0_8px_rgba(255,255,255,0.8)] brightness-125' : ''} ${
+                    isPlayed && isPlaying ? 'waveform-bar-playing' : ''
+                  }`}
                 />
               </div>
             );
@@ -124,7 +127,7 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
         {/* Hover Time Tooltip */}
         {hoverPosition !== null && (
           <div
-            className="absolute -top-7 transform -translate-x-1/2 bg-[#1A1A1A] text-white text-[10px] px-2 py-0.5 rounded border border-neutral-700 pointer-events-none shadow-lg z-20 font-mono"
+            className="absolute -top-7 transform -translate-x-1/2 bg-[#1E1E1E] text-white text-[10px] px-2 py-0.5 rounded border border-[#333333] pointer-events-none shadow-xl z-20 font-mono"
             style={{
               left: `${(hoverPosition / duration) * 100}%`
             }}
@@ -135,7 +138,7 @@ export const WaveformProgressBar: React.FC<WaveformProps> = ({
       </div>
 
       {/* Total Duration */}
-      <span className="text-[11px] font-mono text-neutral-400 w-10 text-left shrink-0">
+      <span className="text-[11px] font-mono text-[#B3B3B3] w-10 text-left shrink-0">
         {formatTime(duration)}
       </span>
     </div>

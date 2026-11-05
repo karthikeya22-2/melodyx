@@ -1,13 +1,13 @@
 {
   "appId": "com.spotube.soundwave",
-  "appName": "SoundWave",
+  "appName": "Melodyx",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
   },
   "android": {
     "allowMixedContent": true,
-    "backgroundColor": "#121212"
+    "backgroundColor": "#0A0A0C"
   }
 }
 

@@ -1,7 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SoundWave</string>
-    <string name="title_activity_main">SoundWave</string>
+    <string name="app_name">Melodyx</string>
+    <string name="title_activity_main">Melodyx</string>
     <string name="package_name">com.spotube.soundwave</string>
     <string name="custom_url_scheme">com.spotube.soundwave</string>
+    <string name="server_client_id">631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com</string>
 </resources>

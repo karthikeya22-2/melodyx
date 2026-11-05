@@ -2,10 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile safe area padding for status bar and home indicator */
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
+}
+
+/* Global Reset */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #0A0A0C;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Hide horizontal scrollbars for clean carousels */
@@ -24,6 +34,15 @@
 
 /* Range input styling for mobile */
 input[type='range'] {
-  accent-color: #1DB954;
+  accent-color: #E2E8F0;
 }
 
+/* Waveform pulse animation */
+@keyframes waveformPulse {
+  0%, 100% { transform: scaleY(0.85); }
+  50% { transform: scaleY(1.25); }
+}
+
+.mobile-waveform-active {
+  animation: waveformPulse 1s ease-in-out infinite;
+}

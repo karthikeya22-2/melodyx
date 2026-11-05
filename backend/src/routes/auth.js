@@ -117,6 +117,102 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Google OAuth Config
+router.get('/google-config', (req, res) => {
+  res.json({
+    clientId: process.env.GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com',
+    webClientId: process.env.GOOGLE_WEB_CLIENT_ID || '631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com',
+    androidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || '631547173450-22lcvhvb8rq7lbsqsi3smucidv2mluh9.apps.googleusercontent.com',
+    projectId: process.env.GOOGLE_PROJECT_ID || 'second-zephyr-468711-r5',
+    projectNumber: process.env.GOOGLE_PROJECT_NUMBER || '631547173450'
+  });
+});
+
+// Google Sign-In & Registration
+router.post('/google', async (req, res) => {
+  try {
+    const { credential, googleUser } = req.body;
+
+    let email = null;
+    let displayName = null;
+    let avatarUrl = null;
+    let googleId = null;
+
+    // 1. If Google ID Token is provided (via Google Identity Services)
+    if (credential) {
+      try {
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+        if (verifyRes.ok) {
+          const info = await verifyRes.json();
+          email = info.email;
+          displayName = info.name || info.given_name || (info.email ? info.email.split('@')[0] : 'Music Fan');
+          avatarUrl = info.picture;
+          googleId = info.sub;
+        } else {
+          // Fallback: parse JWT payload if tokeninfo service is unreachable
+          const payloadPart = credential.split('.')[1];
+          if (payloadPart) {
+            const decoded = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
+            email = decoded.email;
+            displayName = decoded.name || (decoded.email ? decoded.email.split('@')[0] : 'Music Fan');
+            avatarUrl = decoded.picture;
+            googleId = decoded.sub;
+          }
+        }
+      } catch (err) {
+        console.warn('[AUTH] Token verification note:', err.message);
+      }
+    }
+
+    // 2. If client passed direct googleUser info (from Capacitor Google Auth or manual sign-in)
+    if (!email && googleUser && googleUser.email) {
+      email = googleUser.email;
+      displayName = googleUser.name || googleUser.displayName || email.split('@')[0];
+      avatarUrl = googleUser.picture || googleUser.avatarUrl;
+      googleId = googleUser.sub || googleUser.id || 'g-' + Date.now();
+    }
+
+    if (!email) {
+      return res.status(400).json({ error: 'Could not extract Google account email or token.' });
+    }
+
+    // 3. Find or create user in database
+    let user = db.findUserByEmail(email);
+
+    if (user) {
+      // Update existing user with latest Google profile info
+      user = db.updateUser(user.id, {
+        displayName: displayName || user.displayName,
+        avatarUrl: avatarUrl || user.avatarUrl,
+        googleId: googleId || user.googleId || 'g-' + Date.now()
+      });
+    } else {
+      // Create new user from Google profile
+      user = {
+        id: 'usr-g-' + Date.now(),
+        email,
+        googleId: googleId || 'g-' + Date.now(),
+        displayName: displayName || email.split('@')[0],
+        avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName || email)}`,
+        preferredLanguages: ['Telugu', 'Hindi', 'English'],
+        createdAt: new Date().toISOString()
+      };
+      db.createUser(user);
+    }
+
+    // 4. Generate application JWT session token (valid for 30 days)
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+      expiresIn: '30d'
+    });
+
+    const { passwordHash: _, ...userSafe } = user;
+    res.json({ token, user: userSafe });
+  } catch (err) {
+    console.error('[AUTH ERROR] Google login failure:', err);
+    res.status(500).json({ error: err.message || 'Google authentication failed' });
+  }
+});
+
 // Guest Instant Login
 router.post('/guest', (req, res) => {
   const user = db.findUserById('demo-user-1');

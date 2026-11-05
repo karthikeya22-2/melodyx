@@ -1,14 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { RightSidebar } from './components/RightSidebar';
 import { BottomPlayer } from './components/BottomPlayer';
 import { SearchPage } from './components/SearchPage';
+import { SettingsPage } from './components/SettingsPage';
 import { LyricsModal } from './components/LyricsModal';
+import { AppLoadingScreen } from './components/AppLoadingScreen';
+import { CompulsoryAuthScreen } from './components/CompulsoryAuthScreen';
+import { GoogleAuthModal } from './components/GoogleAuthModal';
 import { usePlayerStore } from './store/usePlayerStore';
+import { useAuthStore } from './store/useAuthStore';
 
 export const App: React.FC = () => {
   const { currentView, togglePlay, nextTrack, previousTrack } = usePlayerStore();
+  const { isAuthenticated } = useAuthStore();
+  const [isIntroLoading, setIsIntroLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsIntroLoading(false), 1100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,15 +42,30 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlay, nextTrack, previousTrack]);
 
+  if (isIntroLoading) {
+    return <AppLoadingScreen />;
+  }
+
+  // Compulsory Google Authentication Gate
+  if (!isAuthenticated) {
+    return <CompulsoryAuthScreen />;
+  }
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#090909] text-white overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-[#0A0A0C] text-white overflow-hidden select-none">
       {/* 3-Section Desktop Body */}
       <div className="flex flex-1 overflow-hidden p-2 gap-2">
         {/* 1. Left Sidebar */}
         <Sidebar />
 
         {/* 2. Main Content Area */}
-        {currentView === 'search' ? <SearchPage /> : <MainContent />}
+        {currentView === 'search' ? (
+          <SearchPage />
+        ) : currentView === 'settings' ? (
+          <SettingsPage />
+        ) : (
+          <MainContent />
+        )}
 
         {/* 3. Right Sidebar */}
         <RightSidebar />
@@ -49,6 +76,9 @@ export const App: React.FC = () => {
 
       {/* Synchronized Lyrics Modal */}
       <LyricsModal />
+
+      {/* Global Google Authentication Gate Modal */}
+      <GoogleAuthModal />
     </div>
   );
 };

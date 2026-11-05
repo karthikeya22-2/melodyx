@@ -6,6 +6,7 @@ interface MobileWaveformProps {
   onSeek: (seconds: number) => void;
   trackId?: string;
   barCount?: number;
+  isPlaying?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -20,7 +21,8 @@ export const MobileWaveformProgressBar: React.FC<MobileWaveformProps> = ({
   duration,
   onSeek,
   trackId = 'default',
-  barCount = 36
+  barCount = 42,
+  isPlaying = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -37,10 +39,10 @@ export const MobileWaveformProgressBar: React.FC<MobileWaveformProps> = ({
       const wave2 = Math.cos(section * Math.PI * 6);
       seed = (seed * 9301 + 49297) % 233280;
       const pseudoRandom = seed / 233280;
-      
+
       const heightPercent = Math.min(
         100,
-        Math.max(20, Math.round(35 + wave1 * 25 + wave2 * 15 + pseudoRandom * 25))
+        Math.max(18, Math.round(30 + wave1 * 25 + wave2 * 16 + pseudoRandom * 25))
       );
       heights.push(heightPercent);
     }
@@ -59,14 +61,14 @@ export const MobileWaveformProgressBar: React.FC<MobileWaveformProps> = ({
   const activeBarIndex = Math.floor(playRatio * barCount);
 
   return (
-    <div className="w-full select-none space-y-2">
-      {/* Waveform Canvas */}
+    <div className="w-full select-none space-y-1.5">
+      {/* Waveform Bars Scrubber */}
       <div
         ref={containerRef}
         onClick={e => handleTouchSeek(e.clientX)}
         onTouchStart={e => handleTouchSeek(e.touches[0].clientX)}
         onTouchMove={e => handleTouchSeek(e.touches[0].clientX)}
-        className="w-full h-11 flex items-center justify-between gap-[3px] py-1 cursor-pointer"
+        className="w-full h-10 flex items-center justify-between gap-[2.5px] py-1 cursor-pointer"
       >
         {bars.map((height, idx) => {
           const isPlayed = idx <= activeBarIndex;
@@ -79,11 +81,13 @@ export const MobileWaveformProgressBar: React.FC<MobileWaveformProps> = ({
             >
               <div
                 style={{ height: `${height}%` }}
-                className={`w-full rounded-full transition-colors duration-75 ${
+                className={`w-full rounded-full transition-all duration-75 ${
                   isPlayed
-                    ? 'bg-[#E50914]'
-                    : 'bg-[#333333]'
-                } ${isCurrent ? 'ring-1 ring-white/70' : ''}`}
+                    ? 'bg-gradient-to-t from-slate-300 to-white'
+                    : 'bg-white/10'
+                } ${isCurrent ? 'ring-1 ring-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : ''} ${
+                  isPlayed && isPlaying ? 'mobile-waveform-active' : ''
+                }`}
               />
             </div>
           );
@@ -91,7 +95,7 @@ export const MobileWaveformProgressBar: React.FC<MobileWaveformProps> = ({
       </div>
 
       {/* Time Display */}
-      <div className="flex justify-between text-[11px] font-mono text-neutral-400 px-1">
+      <div className="flex justify-between text-[11px] font-mono text-[#94A3B8] px-0.5">
         <span>{formatTime(progress)}</span>
         <span>{formatTime(duration)}</span>
       </div>

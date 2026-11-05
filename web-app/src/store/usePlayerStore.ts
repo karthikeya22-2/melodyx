@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { Track, Playlist } from '../types';
+import { recommendationEngine } from '../services/recommendationEngine';
+import { useAuthStore } from './useAuthStore';
 
 interface PlayerStore {
   // Current playback state
@@ -18,7 +20,7 @@ interface PlayerStore {
   likedTrackIds: string[];
 
   // Navigation & UI state
-  currentView: 'home' | 'search' | 'library' | 'playlist' | 'liked';
+  currentView: 'home' | 'search' | 'library' | 'playlist' | 'liked' | 'settings';
   selectedPlaylist: Playlist | null;
   searchQuery: string;
   isRightSidebarOpen: boolean;
@@ -41,7 +43,7 @@ interface PlayerStore {
   removeFromQueue: (index: number) => void;
 
   // UI Actions
-  setCurrentView: (view: 'home' | 'search' | 'library' | 'playlist' | 'liked') => void;
+  setCurrentView: (view: 'home' | 'search' | 'library' | 'playlist' | 'liked' | 'settings') => void;
   setSelectedPlaylist: (playlist: Playlist | null) => void;
   setSearchQuery: (query: string) => void;
   toggleRightSidebar: () => void;
@@ -115,7 +117,14 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
     repeatMode: 'off',
     queue: [],
     history: [],
-    likedTrackIds: [], // Clean: user manually likes songs
+    likedTrackIds: (() => {
+      try {
+        const raw = localStorage.getItem('soundwave_liked_ids');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    })(),
 
     currentView: 'home',
     selectedPlaylist: null,
@@ -124,12 +133,23 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
     isLyricsOpen: false,
 
     playTrack: (track: Track, newQueue?: Track[]) => {
+      // Must be logged in with Google to stream and play songs
+      if (!useAuthStore.getState().isAuthenticated) {
+        useAuthStore.getState().openAuthModal('Sign in with Google to play songs and access full music playback.');
+        return;
+      }
+
       const state = get();
       if (newQueue) {
         set({ queue: newQueue });
       } else if (!state.queue.some(t => t.id === track.id)) {
         set({ queue: [track, ...state.queue] });
       }
+
+      // Record play in recommendation engine
+      try {
+        recommendationEngine.recordPlay(track);
+      } catch (e) { }
 
       set({
         currentTrack: track,
@@ -142,7 +162,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
       });
 
       // Stream via robust backend proxy or verified direct link
-      const streamSrc = track.audioUrl || `http://localhost:5000/api/stream/play/${encodeURIComponent(track.id)}`;
+      let streamSrc = track.audioUrl || `/api/stream/play/${encodeURIComponent(track.id)}`;
+      if (streamSrc.includes('soundhelix.com')) {
+        streamSrc = `/api/stream/play/${encodeURIComponent(track.id)}`;
+      }
+      if (streamSrc.startsWith('/')) {
+        streamSrc = `http://localhost:5000${streamSrc}`;
+      }
       audioElement.src = streamSrc;
       audioElement.volume = state.isMuted ? 0 : state.volume;
       audioElement.play().catch(e => {
@@ -151,6 +177,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
     },
 
     togglePlay: () => {
+      if (!useAuthStore.getState().isAuthenticated) {
+        useAuthStore.getState().openAuthModal('Sign in with Google to play songs and access full music playback.');
+        return;
+      }
+
       const { isPlaying, currentTrack, queue, playTrack } = get();
       if (!currentTrack && queue.length > 0) {
         playTrack(queue[0]);
@@ -189,6 +220,19 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
       } else if (repeatMode === 'all') {
         nextIndex = 0;
       } else {
+        // Seamless recommendation autoplay: Continue playing songs from recent searches, playlists & favorites
+        try {
+          const autoplayTracks = recommendationEngine.getNextAutoplayTracks(currentTrack, queue);
+          if (autoplayTracks.length > 0) {
+            const updatedQueue = [...queue, ...autoplayTracks];
+            set({ queue: updatedQueue });
+            playTrack(autoplayTracks[0], updatedQueue);
+            return;
+          }
+        } catch (e) {
+          console.warn('Autoplay error:', e);
+        }
+
         set({ isPlaying: false });
         return;
       }
@@ -250,6 +294,9 @@ export const usePlayerStore = create<PlayerStore>((set, get) => {
         const newLikes = isLiked
           ? s.likedTrackIds.filter(id => id !== track.id)
           : [...s.likedTrackIds, track.id];
+        try {
+          localStorage.setItem('soundwave_liked_ids', JSON.stringify(newLikes));
+        } catch (e) { }
         return { likedTrackIds: newLikes };
       });
     },

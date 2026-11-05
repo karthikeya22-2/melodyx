@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const catalog = require('../services/catalog');
+const playlistImporter = require('../services/playlistImporter');
 const { optionalAuth } = require('./auth');
 
 // Home Feed
@@ -41,6 +42,21 @@ router.get('/album/:id', (req, res) => {
     return res.status(404).json({ error: 'Album not found' });
   }
   res.json(album);
+});
+
+// Import Playlist from Spotify, JioSaavn, YouTube, etc.
+router.post('/import-playlist', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'Please provide a valid playlist URL' });
+    }
+    const imported = await playlistImporter.importPlaylist(url);
+    res.json(imported);
+  } catch (err) {
+    console.error('[IMPORT ERROR]', err.message);
+    res.status(500).json({ error: err.message || 'Failed to import playlist' });
+  }
 });
 
 // Genres

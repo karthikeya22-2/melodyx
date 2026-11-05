@@ -17,7 +17,7 @@ const defaultState = {
       email: 'user@soundwave.local',
       passwordHash: '$2a$10$X86xZ3F1eNqA9p2M9FvTce4q4Q5mU2I8fC1D7g6H5j4k3l2m1n0o.',
       displayName: 'User',
-      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      avatarUrl: 'https://ui-avatars.com/api/?name=User&background=FF244F&color=fff',
       preferredLanguages: ['Telugu', 'Hindi', 'English'],
       createdAt: new Date().toISOString()
     }
@@ -127,7 +127,7 @@ class Database {
       userId,
       title: title || 'New Playlist',
       description: description || '',
-      coverUrl: coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500',
+      coverUrl: coverUrl || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
       isPublic: true,
       tracks: [],
       createdAt: new Date().toISOString(),

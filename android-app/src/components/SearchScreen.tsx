@@ -1,114 +1,238 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, MoreVertical, Disc } from 'lucide-react';
+import { Search as SearchIcon, X, MoreVertical, History, TrendingUp, Sparkles, Play, Pause } from 'lucide-react';
 import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
 import { api } from '../services/api';
 import { Track } from '../types';
+import { recommendationEngine } from '../services/recommendationEngine';
 
 export const SearchScreen: React.FC = () => {
-  const { playTrack, currentTrack, isPlaying, openOptionsMenu } = useMobilePlayerStore();
+  const { playTrack, currentTrack, isPlaying, togglePlay, openOptionsMenu } = useMobilePlayerStore();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any>(null);
-
-  const genres = [
-    { name: 'Telugu', color: 'bg-[#B20710]' },
-    { name: 'Bollywood', color: 'bg-[#8C0810]' },
-    { name: 'Pop Hits', color: 'bg-[#5A080C]' },
-    { name: 'Acoustic', color: 'bg-[#2E2E2E]' },
-    { name: 'Romantic', color: 'bg-[#990000]' },
-    { name: 'Dance', color: 'bg-[#7A060C]' }
-  ];
+  const [results, setResults] = useState<{ tracks: Track[] } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   useEffect(() => {
+    setSearchHistory(recommendationEngine.getSearchHistory());
+  }, []);
+
+  const trendingSearches = recommendationEngine.getTrendingSearches();
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     const timer = setTimeout(() => {
-      api.search(query).then(setResults);
-    }, 200);
+      api.search(query.trim())
+        .then(res => {
+          setResults(res);
+          setIsLoading(false);
+          recommendationEngine.recordSearch(query.trim());
+          if (res?.tracks) {
+            recommendationEngine.saveSearchResults(res.tracks);
+          }
+          setSearchHistory(recommendationEngine.getSearchHistory());
+        })
+        .catch(err => {
+          console.error('Search error:', err);
+          setIsLoading(false);
+        });
+    }, 250);
+
     return () => clearTimeout(timer);
   }, [query]);
 
-  return (
-    <div className="flex-1 overflow-y-auto bg-[#090909] select-none px-4 pt-5 pb-24 touch-scroll">
-      <h1 className="text-2xl font-bold text-white tracking-tight mb-3">Search</h1>
+  const handleSelectSearch = (term: string) => {
+    setQuery(term);
+  };
 
-      {/* Search Bar */}
-      <div className="relative mb-5">
-        <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-neutral-400" />
+  const handleRemoveHistoryItem = (term: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = recommendationEngine.removeSearchItem(term);
+    setSearchHistory(updated);
+  };
+
+  const handleClearAllHistory = () => {
+    recommendationEngine.clearSearchHistory();
+    setSearchHistory([]);
+  };
+
+  // Limit display strictly to top 2-3 most relevant results
+  const tracks: Track[] = (results?.tracks || []).slice(0, 3);
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-[#0A0A0C] select-none px-4 pt-4 pb-28 touch-scroll space-y-5">
+      <h1 className="text-2xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent tracking-tight">Search</h1>
+
+      {/* 1. Mobile Search Bar */}
+      <div className="relative">
+        <SearchIcon className="absolute left-3.5 top-3.5 w-5 h-5 text-slate-400" />
         <input
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Search songs, artists, or languages..."
-          className="w-full bg-[#181818] border border-neutral-700 text-white font-medium text-xs rounded-lg pl-10 pr-9 py-2 focus:outline-none focus:border-[#E50914] placeholder-neutral-500 shadow-inner"
+          placeholder="What do you want to listen to?"
+          className="w-full bg-[#131316] text-white font-medium text-sm rounded-xl pl-11 pr-10 py-3 focus:outline-none focus:ring-1 focus:ring-white/20 placeholder-neutral-500 shadow-md border border-white/10"
         />
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="absolute right-3 top-2.5 p-0.5 text-neutral-400"
+            className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Results or Categories */}
-      {query && results ? (
-        <div className="space-y-1">
-          {results.tracks.map((track: Track) => {
-            const isThisPlaying = currentTrack?.id === track.id && isPlaying;
-            return (
-              <div
-                key={track.id}
-                onClick={() => playTrack(track, results.tracks)}
-                className="flex items-center justify-between p-2 rounded-lg active:bg-[#1D1D1D] transition-colors"
-              >
-                <div className="flex items-center space-x-2.5 truncate">
-                  <img src={track.artwork} alt={track.title} className="w-11 h-11 rounded object-cover shadow" />
-                  <div className="truncate">
-                    <div className="flex items-center space-x-1.5">
-                      <p
-                        className={`text-xs font-semibold truncate ${
-                          isThisPlaying ? 'text-[#E50914]' : 'text-white'
-                        }`}
-                      >
-                        {track.title}
-                      </p>
-                      {track.isPreview && (
-                        <span className="text-[8px] bg-[#E50914]/20 text-[#E50914] px-1 rounded">
-                          Preview
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-neutral-400 truncate mt-0.5">{track.artist}</p>
-                  </div>
-                </div>
-
+      {/* 2. When query is empty: Recent Searches & Recommendations */}
+      {!query && (
+        <div className="space-y-6 pt-1">
+          {/* Recent Searches */}
+          {searchHistory.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-white flex items-center space-x-2">
+                  <History className="w-4 h-4 text-slate-300" />
+                  <span>Recent Searches</span>
+                </h2>
                 <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    openOptionsMenu(track);
-                  }}
-                  className="p-1.5 text-neutral-400 hover:text-white"
+                  onClick={handleClearAllHistory}
+                  className="text-xs text-[#94A3B8] hover:text-white"
                 >
-                  <MoreVertical className="w-4 h-4" />
+                  Clear all
                 </button>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div>
-          <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2.5">Categories</h2>
-          <div className="grid grid-cols-2 gap-2.5">
-            {genres.map(g => (
-              <div
-                key={g.name}
-                onClick={() => setQuery(g.name)}
-                className={`h-20 rounded-lg p-3 ${g.color} relative overflow-hidden shadow cursor-pointer active:scale-95 transition-transform`}
-              >
-                <h3 className="font-bold text-xs text-white">{g.name}</h3>
-                <Disc className="absolute -bottom-2 -right-2 w-12 h-12 text-black/20" />
+
+              <div className="flex flex-wrap gap-2">
+                {searchHistory.map((term, idx) => (
+                  <div
+                    key={`${term}-${idx}`}
+                    onClick={() => handleSelectSearch(term)}
+                    className="flex items-center space-x-2 bg-[#131316] active:bg-[#1A1A20] px-3 py-1.5 rounded-full border border-white/10"
+                  >
+                    <SearchIcon className="w-3 h-3 text-[#94A3B8]" />
+                    <span className="text-xs text-white font-medium">{term}</span>
+                    <button
+                      onClick={e => handleRemoveHistoryItem(term, e)}
+                      className="text-[#888] active:text-white p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Recommended & Trending Searches */}
+          <div className="space-y-3">
+            <h2 className="text-sm font-bold text-white flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4 text-slate-300" />
+              <span>Recommended Searches</span>
+            </h2>
+
+            <div className="flex flex-wrap gap-2">
+              {trendingSearches.map(term => (
+                <button
+                  key={term}
+                  onClick={() => handleSelectSearch(term)}
+                  className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-[#131316] active:bg-[#1A1A20] text-xs font-semibold text-[#94A3B8] active:text-white rounded-full border border-white/10"
+                >
+                  <Sparkles className="w-3 h-3 text-slate-300" />
+                  <span>{term}</span>
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* 3. Loading State */}
+      {isLoading && (
+        <div className="py-12 flex items-center justify-center space-x-2 text-xs text-[#94A3B8]">
+          <div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+          <span>Finding accurate results...</span>
+        </div>
+      )}
+
+      {/* 4. Filtered & Ranked Results (Strictly Top 2–3 Matches) */}
+      {!isLoading && query && results && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+              Top Matches ({tracks.length})
+            </h2>
+            <span className="text-[11px] text-[#888]">Ranked by relevance</span>
+          </div>
+
+          {tracks.length > 0 ? (
+            <div className="space-y-1">
+              {tracks.map(track => {
+                const isThisPlaying = currentTrack?.id === track.id && isPlaying;
+                return (
+                  <div
+                    key={track.id}
+                    onClick={() => {
+                      if (currentTrack?.id === track.id) togglePlay();
+                      else playTrack(track, tracks);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-xl active:bg-[#1A1A20] transition-colors bg-[#131316] border border-white/5"
+                  >
+                    <div className="flex items-center space-x-3 truncate">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#1A1A20] ring-1 ring-white/5">
+                        <img
+                          src={track.artwork}
+                          alt={track.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {isThisPlaying && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Pause className="w-5 h-5 fill-white text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="truncate">
+                        <p
+                          className={`text-sm font-bold truncate ${
+                            isThisPlaying ? 'text-white font-extrabold drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-white'
+                          }`}
+                        >
+                          {track.title}
+                        </p>
+                        <p className="text-xs text-[#94A3B8] truncate mt-0.5">
+                          {track.artist} • <span className="text-[#888]">{track.album || 'Single'}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-[11px] font-mono text-[#888]">
+                        {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
+                      </span>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          openOptionsMenu(track);
+                        }}
+                        className="p-1.5 text-[#94A3B8] hover:text-white"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-12 text-center space-y-1">
+              <p className="text-sm font-bold text-white">No matches found for "{query}"</p>
+              <p className="text-xs text-[#888]">Try searching another song or artist name.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
