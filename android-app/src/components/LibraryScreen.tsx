@@ -277,7 +277,7 @@ export const LibraryScreen: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-slate-300" />
             </h3>
             <p className="text-[10px] text-[#94A3B8] mt-0.5">
-              Paste Spotify, JioSaavn or YouTube playlist link
+              Paste Spotify, JioSaavn, YouTube, Apple Music or web link
             </p>
           </div>
         </div>
@@ -285,19 +285,26 @@ export const LibraryScreen: React.FC = () => {
         {/* Liked Songs Tile */}
         <div
           onClick={() => {
-            const allTracks = [
-              ...(feed?.trendingTelugu || []),
-              ...(feed?.trendingHindi || []),
-              ...(feed?.trendingEnglish || [])
-            ];
-            const liked = allTracks.filter(t => likedTrackIds.includes(t.id));
+            let likedTracks: Track[] = [];
+            try {
+              const rawLiked = localStorage.getItem('melodyx_liked_tracks') || localStorage.getItem('soundwave_liked_tracks');
+              if (rawLiked) likedTracks = JSON.parse(rawLiked);
+            } catch (e) { }
+
+            const feedLiked = allTracks.filter(t => likedTrackIds.includes(t.id));
+            const existingIds = new Set(likedTracks.map(t => t.id));
+            for (const t of feedLiked) {
+              if (!existingIds.has(t.id)) likedTracks.push(t);
+            }
+            likedTracks = likedTracks.filter(t => likedTrackIds.includes(t.id));
+
             setSelectedPlaylist({
               id: 'liked-songs',
               title: 'Liked Songs',
               description: 'Your favorite tracks',
-              coverUrl: 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
-              trackCount: liked.length,
-              tracks: liked
+              coverUrl: likedTracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+              trackCount: likedTracks.length,
+              tracks: likedTracks
             });
           }}
           className="flex items-center space-x-3 p-1.5 rounded-xl active:bg-[#1A1A20] cursor-pointer transition-colors"

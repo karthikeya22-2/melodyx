@@ -23,9 +23,6 @@ export const Sidebar: React.FC = () => {
       coverUrl: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg'
     }
   ];
-      coverUrl: 'https://c.saavncdn.com/237/Geetha-Govindam-Telugu-2018-20180921-500x500.jpg'
-    }
-  ];
 
   return (
     <aside className="w-[280px] flex flex-col h-full select-none gap-2 shrink-0">

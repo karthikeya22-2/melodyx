@@ -1,9 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { Search as SearchIcon, X, MoreVertical, History, TrendingUp, Sparkles, Play, Pause } from 'lucide-react';
+import { Search as SearchIcon, X, MoreVertical, History, TrendingUp, Sparkles, Play, Pause, CheckCircle2 } from 'lucide-react';
 import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
 import { api } from '../services/api';
 import { Track } from '../types';
 import { recommendationEngine } from '../services/recommendationEngine';
+
+interface RankedItem {
+  track: Track;
+  isExact: boolean;
+  isRecommended: boolean;
+}
+
+function rankSearchTracks(query: string, rawTracks: Track[]): RankedItem[] {
+  if (!rawTracks || rawTracks.length === 0) return [];
+
+  const cleanQuery = query.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+  const queryTokens = cleanQuery.split(/\s+/).filter(Boolean);
+
+  let exactMatchIndex = -1;
+  let bestExactScore = 0;
+
+  for (let i = 0; i < rawTracks.length; i++) {
+    const t = rawTracks[i];
+    const cleanTitle = (t.title || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+
+    // Direct title exact match
+    if (cleanTitle === cleanQuery) {
+      exactMatchIndex = i;
+      break;
+    }
+
+    // Title starts with query or query starts with title
+    if (cleanTitle.startsWith(cleanQuery) || cleanQuery.startsWith(cleanTitle)) {
+      if (bestExactScore < 2) {
+        bestExactScore = 2;
+        exactMatchIndex = i;
+      }
+    }
+
+    // All search tokens contained in title
+    if (queryTokens.length > 0 && queryTokens.every(tok => cleanTitle.includes(tok))) {
+      if (bestExactScore < 1) {
+        bestExactScore = 1;
+        exactMatchIndex = i;
+      }
+    }
+  }
+
+  // Exact Match: Return 1 exact match + 1 or 2 recommendations (2 to 3 songs total)
+  if (exactMatchIndex !== -1) {
+    const exactTrack = rawTracks[exactMatchIndex];
+    const remaining = rawTracks.filter((_, idx) => idx !== exactMatchIndex);
+    const recommended = remaining.slice(0, 2);
+
+    return [
+      { track: exactTrack, isExact: true, isRecommended: false },
+      ...recommended.map(t => ({ track: t, isExact: false, isRecommended: true }))
+    ];
+  }
+
+  // Broad / Non-exact Search: Return strictly 3 to 4 songs maximum
+  const topMatches = rawTracks.slice(0, 4);
+  return topMatches.map((t, idx) => ({
+    track: t,
+    isExact: false,
+    isRecommended: idx > 0
+  }));
+}
 
 export const SearchScreen: React.FC = () => {
   const { playTrack, currentTrack, isPlaying, togglePlay, openOptionsMenu } = useMobilePlayerStore();
@@ -61,8 +124,14 @@ export const SearchScreen: React.FC = () => {
     setSearchHistory([]);
   };
 
-  // Display all relevant search matches
-  const tracks: Track[] = (results?.tracks || []).slice(0, 30);
+  // Rank and limit search results:
+  // - If exact match: 1 exact match + 1 or 2 recommendations (2–3 songs total)
+  // - If broad/no exact match: strictly 3 to 4 songs maximum
+  const rankedItems: RankedItem[] = query.trim() && results?.tracks
+    ? rankSearchTracks(query.trim(), results.tracks)
+    : [];
+
+  const hasExactMatch = rankedItems.some(i => i.isExact);
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0A0A0C] select-none px-4 pt-4 pb-28 touch-scroll space-y-5">
@@ -159,50 +228,77 @@ export const SearchScreen: React.FC = () => {
         </div>
       )}
 
-      {/* 4. Filtered & Ranked Results (Strictly Top 2–3 Matches) */}
+      {/* 4. Filtered & Ranked Results (Strictly 2–3 if exact match, or 3–4 songs max) */}
       {!isLoading && query && results && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              Top Matches ({tracks.length})
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+              <span>{hasExactMatch ? 'Exact Match & Recommendations' : 'Top Results'}</span>
+              <span className="text-[11px] font-normal text-slate-400 font-mono">({rankedItems.length})</span>
             </h2>
-            <span className="text-[11px] text-[#888]">Ranked by relevance</span>
+            <span className="text-[11px] text-slate-400">
+              {hasExactMatch ? 'Exact + Recommended' : 'Curated Top Matches'}
+            </span>
           </div>
 
-          {tracks.length > 0 ? (
-            <div className="space-y-1">
-              {tracks.map(track => {
+          {rankedItems.length > 0 ? (
+            <div className="space-y-1.5">
+              {rankedItems.map(({ track, isExact, isRecommended }, idx) => {
                 const isThisPlaying = currentTrack?.id === track.id && isPlaying;
                 return (
                   <div
-                    key={track.id}
+                    key={`${track.id}-${idx}`}
                     onClick={() => {
-                      if (currentTrack?.id === track.id) togglePlay();
-                      else playTrack(track, tracks);
+                      if (currentTrack?.id === track.id) {
+                        togglePlay();
+                      } else {
+                        // Play searched song with 'search' as playbackSource so completion redirects to user's library/playlists
+                        playTrack(track, rankedItems.map(i => i.track), 'search');
+                      }
                     }}
-                    className="flex items-center justify-between p-2 rounded-xl active:bg-[#1A1A20] transition-colors bg-[#131316] border border-white/5"
+                    className={`flex items-center justify-between p-2.5 rounded-xl active:bg-[#1A1A20] transition-colors bg-[#131316] border ${
+                      isExact
+                        ? 'border-white/30 bg-gradient-to-r from-white/[0.08] to-transparent shadow-sm'
+                        : 'border-white/5'
+                    }`}
                   >
                     <div className="flex items-center space-x-3 truncate">
-                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#1A1A20] ring-1 ring-white/5">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#1A1A20] ring-1 ring-white/10">
                         <img
                           src={track.artwork}
                           alt={track.title}
                           className="w-full h-full object-cover"
                         />
                         {isThisPlaying && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                             <Pause className="w-5 h-5 fill-white text-white" />
                           </div>
                         )}
                       </div>
                       <div className="truncate">
-                        <p
-                          className={`text-sm font-bold truncate ${
-                            isThisPlaying ? 'text-white font-extrabold drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-white'
-                          }`}
-                        >
-                          {track.title}
-                        </p>
+                        <div className="flex items-center space-x-1.5">
+                          <p
+                            className={`text-sm font-bold truncate ${
+                              isThisPlaying
+                                ? 'text-white font-extrabold drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]'
+                                : 'text-white'
+                            }`}
+                          >
+                            {track.title}
+                          </p>
+                          {isExact && (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-gradient-to-r from-slate-200 via-white to-slate-300 text-black shadow-sm flex items-center space-x-1">
+                              <CheckCircle2 className="w-2.5 h-2.5 inline stroke-[3]" />
+                              <span>Exact Match</span>
+                            </span>
+                          )}
+                          {isRecommended && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/10 text-slate-300 border border-white/10 flex items-center space-x-0.5">
+                              <Sparkles className="w-2.5 h-2.5 inline text-slate-300" />
+                              <span>Recommended</span>
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-[#94A3B8] truncate mt-0.5">
                           {track.artist} • <span className="text-[#888]">{track.album || 'Single'}</span>
                         </p>
@@ -226,6 +322,12 @@ export const SearchScreen: React.FC = () => {
                   </div>
                 );
               })}
+
+              <div className="pt-2 px-1 text-center">
+                <p className="text-[11px] text-slate-500 font-medium">
+                  🎵 Search playback will auto-continue to your imported & liked playlists
+                </p>
+              </div>
             </div>
           ) : (
             <div className="py-12 text-center space-y-1">

@@ -89,15 +89,18 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
         </div>
 
         {/* Platform Pills */}
-        <div className="flex items-center space-x-2 text-[11px] font-semibold text-[#94A3B8]">
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[#94A3B8]">
           <span className="px-2.5 py-1 rounded-full bg-[#1A1A20] border border-[#2A2A30] text-emerald-400">
             ● Spotify
           </span>
           <span className="px-2.5 py-1 rounded-full bg-[#1A1A20] border border-[#2A2A30] text-blue-400">
-            ● JioSaavn (320kbps)
+            ● JioSaavn
           </span>
           <span className="px-2.5 py-1 rounded-full bg-[#1A1A20] border border-[#2A2A30] text-red-400">
-            ● YouTube Music
+            ● YouTube
+          </span>
+          <span className="px-2.5 py-1 rounded-full bg-[#1A1A20] border border-[#2A2A30] text-pink-400">
+            ● Apple Music
           </span>
         </div>
 

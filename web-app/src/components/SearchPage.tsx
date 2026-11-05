@@ -191,7 +191,7 @@ export const SearchPage: React.FC = () => {
                   <div
                     onClick={() => {
                       if (currentTrack?.id === topResult.id) togglePlay();
-                      else playTrack(topResult, tracks);
+                      else playTrack(topResult, tracks, 'search');
                     }}
                     className="group bg-[#131316] hover:bg-[#1A1A20] p-5 rounded-xl cursor-pointer transition-all relative flex flex-col justify-between border border-white/10 hover:border-white/20"
                   >
@@ -218,7 +218,7 @@ export const SearchPage: React.FC = () => {
                         onClick={e => {
                           e.stopPropagation();
                           if (currentTrack?.id === topResult.id) togglePlay();
-                          else playTrack(topResult, tracks);
+                          else playTrack(topResult, tracks, 'search');
                         }}
                         className="w-11 h-11 rounded-full bg-gradient-to-b from-white via-slate-100 to-slate-300 text-black flex items-center justify-center shadow-xl shadow-white/20 hover:scale-105 active:scale-95 transition-all"
                       >
@@ -243,7 +243,7 @@ export const SearchPage: React.FC = () => {
                         key={t.id}
                         onClick={() => {
                           if (currentTrack?.id === t.id) togglePlay();
-                          else playTrack(t, tracks);
+                          else playTrack(t, tracks, 'search');
                         }}
                         className="group flex items-center justify-between p-3 rounded-xl hover:bg-[#131316] cursor-pointer transition-colors border border-transparent hover:border-white/5"
                       >

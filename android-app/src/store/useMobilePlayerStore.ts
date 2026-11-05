@@ -15,6 +15,7 @@ interface MobilePlayerStore {
   repeatMode: 'off' | 'all' | 'one';
   queue: Track[];
   likedTrackIds: string[];
+  playbackSource: 'search' | 'playlist' | 'library' | 'home' | null;
 
   // Mobile Navigation & View
   currentTab: 'home' | 'search' | 'library' | 'settings';
@@ -25,7 +26,7 @@ interface MobilePlayerStore {
   selectedTrackForOptions: Track | null;
 
   // Actions
-  playTrack: (track: Track, newQueue?: Track[]) => void;
+  playTrack: (track: Track, newQueue?: Track[], source?: 'search' | 'playlist' | 'library' | 'home') => void;
   togglePlay: () => void;
   pause: () => void;
   resume: () => void;
@@ -35,6 +36,7 @@ interface MobilePlayerStore {
   toggleShuffle: () => void;
   toggleRepeat: () => void;
   toggleLike: (track: Track) => void;
+  redirectToUserPlaylist: () => boolean;
 
   // Mobile Modal Actions
   setCurrentTab: (tab: 'home' | 'search' | 'library' | 'settings') => void;
@@ -201,12 +203,13 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
     queue: [],
     likedTrackIds: (() => {
       try {
-        const raw = localStorage.getItem('soundwave_liked_ids');
+        const raw = localStorage.getItem('soundwave_liked_ids') || localStorage.getItem('melodyx_liked_ids');
         return raw ? JSON.parse(raw) : [];
       } catch (e) {
         return [];
       }
     })(),
+    playbackSource: null,
 
     currentTab: 'home',
     selectedPlaylist: null,
@@ -217,11 +220,15 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
 
     setSelectedPlaylist: (playlist: Playlist | null) => set({ selectedPlaylist: playlist }),
 
-    playTrack: (track: Track, newQueue?: Track[]) => {
+    playTrack: (track: Track, newQueue?: Track[], source?: 'search' | 'playlist' | 'library' | 'home') => {
       // Must be logged in with Google to stream and play songs
       if (!useAuthStore.getState().isAuthenticated) {
         useAuthStore.getState().openAuthModal('Sign in with Google to play songs and access full music playback.');
         return;
+      }
+
+      if (source) {
+        set({ playbackSource: source });
       }
 
       const state = get();
@@ -300,11 +307,87 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
       set({ isPlaying: true });
     },
 
+    redirectToUserPlaylist: (): boolean => {
+      const { playTrack } = get();
+
+      // 1. Check user imported or created custom playlists
+      try {
+        const rawCustom = localStorage.getItem('melodyx_custom_playlists') || localStorage.getItem('soundwave_custom_playlists');
+        const customPlaylists: Playlist[] = rawCustom ? JSON.parse(rawCustom) : [];
+        const validPlaylist = customPlaylists.find(p => p.tracks && p.tracks.length > 0);
+        if (validPlaylist && validPlaylist.tracks && validPlaylist.tracks.length > 0) {
+          set({
+            currentTab: 'library',
+            selectedPlaylist: validPlaylist,
+            playbackSource: 'playlist'
+          });
+          playTrack(validPlaylist.tracks[0], validPlaylist.tracks, 'playlist');
+          return true;
+        }
+      } catch (e) { }
+
+      // 2. Check Liked Songs
+      try {
+        const rawLiked = localStorage.getItem('melodyx_liked_tracks') || localStorage.getItem('soundwave_liked_tracks');
+        const likedTracks: Track[] = rawLiked ? JSON.parse(rawLiked) : [];
+        if (likedTracks.length > 0) {
+          const likedPlaylist: Playlist = {
+            id: 'liked-songs',
+            title: 'Liked Songs',
+            description: 'Your favorite tracks',
+            coverUrl: likedTracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+            trackCount: likedTracks.length,
+            tracks: likedTracks
+          };
+          set({
+            currentTab: 'library',
+            selectedPlaylist: likedPlaylist,
+            playbackSource: 'playlist'
+          });
+          playTrack(likedPlaylist.tracks[0], likedPlaylist.tracks, 'playlist');
+          return true;
+        }
+      } catch (e) { }
+
+      // 3. Fallback: Recently Played
+      try {
+        const history = recommendationEngine.getRecentlyPlayed();
+        if (history.length > 0) {
+          const recentPlaylist: Playlist = {
+            id: 'recently-played',
+            title: 'Recently Played',
+            description: 'Songs you listened to recently',
+            coverUrl: history[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+            trackCount: history.length,
+            tracks: history
+          };
+          set({
+            currentTab: 'library',
+            selectedPlaylist: recentPlaylist,
+            playbackSource: 'playlist'
+          });
+          playTrack(history[0], history, 'playlist');
+          return true;
+        }
+      } catch (e) { }
+
+      return false;
+    },
+
     nextTrack: () => {
-      const { queue, currentTrack, shuffle, playTrack, repeatMode } = get();
+      const { queue, currentTrack, shuffle, playTrack, repeatMode, playbackSource, redirectToUserPlaylist } = get();
       if (!queue.length) return;
       const currentIndex = queue.findIndex(t => t.id === currentTrack?.id);
       let nextIndex = 0;
+
+      // Special User Rule: If a searched song finishes or reaches end of search queue, redirect to user's playlist (imported, created, or liked)
+      if (playbackSource === 'search') {
+        const isEndOfSearch = currentIndex === -1 || currentIndex >= queue.length - 1;
+        if (isEndOfSearch) {
+          const redirected = redirectToUserPlaylist();
+          if (redirected) return;
+        }
+      }
 
       if (shuffle) {
         nextIndex = Math.floor(Math.random() * queue.length);
@@ -313,6 +396,12 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
       } else if (repeatMode === 'all') {
         nextIndex = 0;
       } else {
+        // Queue is finished: if from search, redirect
+        if (playbackSource === 'search') {
+          const redirected = redirectToUserPlaylist();
+          if (redirected) return;
+        }
+
         // Seamless recommendation autoplay: Continue playing songs from recent searches, playlists & favorites
         try {
           const autoplayTracks = recommendationEngine.getNextAutoplayTracks(currentTrack, queue);
@@ -371,6 +460,18 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
           : [...s.likedTrackIds, track.id];
         try {
           localStorage.setItem('soundwave_liked_ids', JSON.stringify(newLikes));
+          localStorage.setItem('melodyx_liked_ids', JSON.stringify(newLikes));
+
+          // Also save full Track object so Liked Songs always has playable audio & metadata
+          const rawLikedTracks = localStorage.getItem('melodyx_liked_tracks') || localStorage.getItem('soundwave_liked_tracks');
+          let likedTracks: Track[] = rawLikedTracks ? JSON.parse(rawLikedTracks) : [];
+          if (isLiked) {
+            likedTracks = likedTracks.filter(t => t.id !== track.id);
+          } else {
+            likedTracks = [track, ...likedTracks.filter(t => t.id !== track.id)];
+          }
+          localStorage.setItem('melodyx_liked_tracks', JSON.stringify(likedTracks));
+          localStorage.setItem('soundwave_liked_tracks', JSON.stringify(likedTracks));
         } catch (e) { }
         return { likedTrackIds: newLikes };
       });

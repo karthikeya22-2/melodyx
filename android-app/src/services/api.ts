@@ -509,17 +509,34 @@ export const api = {
   },
 
   async importPlaylist(url: string): Promise<any> {
-    const host = getApiHost();
-    const res = await fetch(`${host}/api/catalog/import-playlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url.trim() })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Failed to import playlist (HTTP ${res.status})`);
+    const cleanUrl = url.trim();
+    // 1. Try Universal Client-Side Importer (handles Spotify, JioSaavn, YouTube, Apple Music, Web Links)
+    try {
+      const { playlistImporter } = await import('./playlistImporter');
+      const imported = await playlistImporter.importPlaylist(cleanUrl);
+      if (imported && imported.tracks && imported.tracks.length > 0) {
+        return imported;
+      }
+    } catch (clientErr: any) {
+      console.warn('[PlaylistImporter] Client-side import note:', clientErr?.message || clientErr);
     }
-    return await res.json();
+
+    // 2. Fallback to Render backend server if reachable
+    try {
+      const host = getApiHost();
+      const res = await fetch(`${host}/api/catalog/import-playlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanUrl })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (serverErr) {
+      console.warn('[PlaylistImporter] Server fallback note:', serverErr);
+    }
+
+    throw new Error('Unable to import playlist. Please verify the link is public and try again.');
   },
 
   async loginWithGoogle(payload: { credential?: string; googleUser?: any }) {

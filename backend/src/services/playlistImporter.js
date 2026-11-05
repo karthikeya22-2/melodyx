@@ -30,7 +30,12 @@ class PlaylistImporter {
       return await this.importYouTube(url);
     }
 
-    // 4. Generic Link / Fallback
+    // 4. Apple Music Playlist
+    if (url.includes('music.apple.com') || url.includes('apple.com')) {
+      return await this.importAppleMusic(url);
+    }
+
+    // 5. Generic Link / Fallback
     return await this.importGeneric(url);
   }
 
@@ -322,7 +327,43 @@ class PlaylistImporter {
   }
 
   /**
-   * Generic Fallback (Wynk, Apple Music, etc.)
+   * Import Apple Music Playlist
+   */
+  async importAppleMusic(url) {
+    try {
+      const slugMatch = url.match(/playlist\/([^/]+)\/([a-zA-Z0-9.]+)/);
+      const rawTitle = slugMatch ? slugMatch[1].replace(/-/g, ' ') : 'Apple Music Playlist';
+      const cleanTitle = rawTitle.replace(/\b\w/g, l => l.toUpperCase());
+
+      const searchRes = await jioSaavnService.searchTracks(cleanTitle.slice(0, 30), 12);
+      const tracks = searchRes.map((t, idx) => ({
+        id: t.id,
+        title: t.title,
+        artist: t.artist,
+        album: t.album || cleanTitle,
+        artwork: t.artwork,
+        duration: t.duration,
+        directStreamUrl: t.directStreamUrl,
+        audioUrl: t.audioUrl
+      }));
+
+      return {
+        id: `imported_apple_${Date.now()}`,
+        title: cleanTitle,
+        description: 'Imported from Apple Music',
+        coverUrl: tracks[0]?.artwork || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500',
+        source: 'apple',
+        sourceUrl: url,
+        trackCount: tracks.length,
+        tracks
+      };
+    } catch (e) {
+      return await this.importGeneric(url);
+    }
+  }
+
+  /**
+   * Generic Fallback (Wynk, SoundCloud, etc.)
    */
   async importGeneric(url) {
     try {

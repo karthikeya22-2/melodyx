@@ -73,7 +73,7 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold">Import Playlist</h2>
-              <p className="text-[11px] text-[#888]">Spotify • JioSaavn • YouTube</p>
+              <p className="text-[11px] text-slate-300">Spotify • JioSaavn • YouTube • Apple Music</p>
             </div>
           </div>
           <button
@@ -99,7 +99,7 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
                   setUrl(e.target.value);
                   if (error) setError(null);
                 }}
-                placeholder="Paste Spotify, JioSaavn or YouTube link"
+                placeholder="Paste Spotify, JioSaavn, YouTube, Apple Music or web link"
                 className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/40 focus:outline-none rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#666]"
                 disabled={isLoading}
                 autoFocus

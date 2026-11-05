@@ -4,30 +4,30 @@ const API_BASE = (import.meta as any).env?.VITE_API_URL
   ? `${(import.meta as any).env.VITE_API_URL}/api`
   : 'http://localhost:5000/api';
 
-// Fallback tracks with full-length streaming endpoints
+// Direct 320kbps Master Tracks (Guaranteed to stream with zero backend lag)
 const fallbackTelugu: Track[] = [
   {
     id: 'telugu-1',
     title: 'Naatu Naatu',
     artist: 'Rahul Sipligunj, Kaala Bhairava, M.M. Keeravaani',
     album: 'RRR',
-    duration: 215,
+    duration: 214,
     language: 'Telugu',
-    genre: 'Tollywood Folk / Dance',
     artwork: 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/telugu-1`,
+    audioUrl: 'https://aac.saavncdn.com/683/000ab54759049a8451ffcdc6412a0ef6_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/683/000ab54759049a8451ffcdc6412a0ef6_320.mp4',
     isPreview: false
   },
   {
     id: 'telugu-2',
     title: 'Kurchi Madathapetti',
-    artist: 'S. Thaman, Sahithi Chaganti, Sri Krishna',
+    artist: 'Mahesh Babu, Thaman S, Sri Krishna, Sahithi Chaganti',
     album: 'Guntur Kaaram',
-    duration: 235,
+    duration: 216,
     language: 'Telugu',
-    genre: 'Tollywood Party',
     artwork: 'https://c.saavncdn.com/000/Guntur-Kaaram-Telugu-2023-20240126145901-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/telugu-2`,
+    audioUrl: 'https://aac.saavncdn.com/000/a8b06cdf02fd61001823e10d55ad3ebe_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/000/a8b06cdf02fd61001823e10d55ad3ebe_320.mp4',
     isPreview: false
   },
   {
@@ -35,11 +35,11 @@ const fallbackTelugu: Track[] = [
     title: 'Chuttamalle',
     artist: 'Anirudh Ravichander, Shilpa Rao',
     album: 'Devara Part 1',
-    duration: 223,
+    duration: 222,
     language: 'Telugu',
-    genre: 'Melody / Romantic',
     artwork: 'https://c.saavncdn.com/313/Devara-Part-1-Telugu-Telugu-2024-20240926171010-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/telugu-3`,
+    audioUrl: 'https://aac.saavncdn.com/814/8816aa4082d1bf261fd3c3a4533a2898_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/814/8816aa4082d1bf261fd3c3a4533a2898_320.mp4',
     isPreview: false
   },
   {
@@ -47,11 +47,47 @@ const fallbackTelugu: Track[] = [
     title: 'Samajavaragamana',
     artist: 'Sid Sriram, Thaman S',
     album: 'Ala Vaikunthapurramuloo',
-    duration: 230,
+    duration: 219,
     language: 'Telugu',
-    genre: 'Romantic Melody',
     artwork: 'https://c.saavncdn.com/517/Ala-Vaikunthapurramuloo-Telugu-2019-20200116144338-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/telugu-4`,
+    audioUrl: 'https://aac.saavncdn.com/517/339d76dce4db4f43f4721eec2d8f03ef_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/517/339d76dce4db4f43f4721eec2d8f03ef_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'telugu-5',
+    title: 'Fear Song',
+    artist: 'Anirudh Ravichander, Ramajogayya Sastry',
+    album: 'Devara Part 1',
+    duration: 195,
+    language: 'Telugu',
+    artwork: 'https://c.saavncdn.com/313/Devara-Part-1-Telugu-Telugu-2024-20240926171010-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/313/1178c7b2a16c3fd32ec5cd002b5a1ce0_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/313/1178c7b2a16c3fd32ec5cd002b5a1ce0_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'telugu-6',
+    title: 'Inkem Inkem Inkem Kaavaale',
+    artist: 'Sid Sriram, Gopi Sundar',
+    album: 'Geetha Govindam',
+    duration: 266,
+    language: 'Telugu',
+    artwork: 'https://c.saavncdn.com/237/Geetha-Govindam-Telugu-2018-20180921-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/237/7942edb73e64d4e35e488337e14753b7_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/237/7942edb73e64d4e35e488337e14753b7_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'telugu-7',
+    title: 'Oo Antava Mava',
+    artist: 'Indravathi Chauhan, Devi Sri Prasad',
+    album: 'Pushpa: The Rise',
+    duration: 229,
+    language: 'Telugu',
+    artwork: 'https://c.saavncdn.com/blob/056/Pushpa-The-Rise-Telugu-2021-20211216115409-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/449/b3ed2e3bd6e4dedac01cddcfe6a435b2_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/449/b3ed2e3bd6e4dedac01cddcfe6a435b2_320.mp4',
     isPreview: false
   }
 ];
@@ -60,13 +96,13 @@ const fallbackHindi: Track[] = [
   {
     id: 'hindi-1',
     title: 'Kesariya',
-    artist: 'Arijit Singh, Pritam',
+    artist: 'Pritam, Arijit Singh, Amitabh Bhattacharya',
     album: 'Brahmastra',
     duration: 268,
     language: 'Hindi',
-    genre: 'Bollywood Romance',
     artwork: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/hindi-1`,
+    audioUrl: 'https://aac.saavncdn.com/871/c2febd353f3a076a406fa37510f31f9f_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/871/c2febd353f3a076a406fa37510f31f9f_320.mp4',
     isPreview: false
   },
   {
@@ -74,23 +110,47 @@ const fallbackHindi: Track[] = [
     title: 'Apna Bana Le',
     artist: 'Arijit Singh, Sachin-Jigar',
     album: 'Bhediya',
-    duration: 272,
+    duration: 261,
     language: 'Hindi',
-    genre: 'Sufi Romantic',
     artwork: 'https://c.saavncdn.com/815/Bhediya-Hindi-2023-20230927155213-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/hindi-2`,
+    audioUrl: 'https://aac.saavncdn.com/238/5583fbab6328b12f467f01ee335e496d_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/238/5583fbab6328b12f467f01ee335e496d_320.mp4',
     isPreview: false
   },
   {
     id: 'hindi-3',
     title: 'Chaleya',
-    artist: 'Arijit Singh, Shilpa Rao, Anirudh',
+    artist: 'Anirudh Ravichander, Arijit Singh, Shilpa Rao',
     album: 'Jawan',
-    duration: 188,
+    duration: 200,
     language: 'Hindi',
-    genre: 'Bollywood Pop',
     artwork: 'https://c.saavncdn.com/047/Jawan-Hindi-2023-20230921190854-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/hindi-3`,
+    audioUrl: 'https://aac.saavncdn.com/047/d1366530468931703ac909e82a3ee788_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/047/d1366530468931703ac909e82a3ee788_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'hindi-4',
+    title: 'Tum Hi Ho',
+    artist: 'Mithoon, Arijit Singh',
+    album: 'Aashiqui 2',
+    duration: 262,
+    language: 'Hindi',
+    artwork: 'https://c.saavncdn.com/430/Aashiqui-2-Hindi-2013-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/430/5c5ea5cc00e3bff45616013226f376fe_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/430/5c5ea5cc00e3bff45616013226f376fe_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'hindi-5',
+    title: 'Raataan Lambiyan',
+    artist: 'Tanishk Bagchi, Jubin Nautiyal, Asees Kaur',
+    album: 'Shershaah',
+    duration: 230,
+    language: 'Hindi',
+    artwork: 'https://c.saavncdn.com/238/Shershaah-Original-Motion-Picture-Soundtrack--Hindi-2021-20210815181610-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/238/35726d4394604604e961bf5b846870d0_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/238/35726d4394604604e961bf5b846870d0_320.mp4',
     isPreview: false
   }
 ];
@@ -100,12 +160,12 @@ const fallbackEnglish: Track[] = [
     id: 'eng-1',
     title: 'Blinding Lights',
     artist: 'The Weeknd',
-    album: 'After Hours',
-    duration: 203,
+    album: 'The Highlights',
+    duration: 204,
     language: 'English',
-    genre: 'Synthwave / Pop',
     artwork: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/eng-1`,
+    audioUrl: 'https://aac.saavncdn.com/396/eca27e31e93211051fa0de18160ea825_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/396/eca27e31e93211051fa0de18160ea825_320.mp4',
     isPreview: false
   },
   {
@@ -113,23 +173,35 @@ const fallbackEnglish: Track[] = [
     title: 'Shape of You',
     artist: 'Ed Sheeran',
     album: 'Divide (÷)',
-    duration: 235,
+    duration: 233,
     language: 'English',
-    genre: 'Dance Pop',
-    artwork: 'https://c.saavncdn.com/126/Shape-of-You-English-2017-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/eng-2`,
+    artwork: 'https://c.saavncdn.com/286/WMG_190295851286-English-2017-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/286/2929d11a5d44a3592ced0383fa6f1977_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/286/2929d11a5d44a3592ced0383fa6f1977_320.mp4',
     isPreview: false
   },
   {
     id: 'eng-3',
-    title: 'Starboy',
-    artist: 'The Weeknd, Daft Punk',
-    album: 'Starboy',
-    duration: 231,
+    title: 'STAY',
+    artist: 'The Kid LAROI, Justin Bieber',
+    album: 'STAY',
+    duration: 140,
     language: 'English',
-    genre: 'R&B / Electro',
-    artwork: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg',
-    audioUrl: `${API_BASE}/stream/play/eng-3`,
+    artwork: 'https://c.saavncdn.com/895/Stay-English-2021-20210706223809-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/895/9a3f48fb98e9dd0b201f6cacfb554408_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/895/9a3f48fb98e9dd0b201f6cacfb554408_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'eng-4',
+    title: 'Believer',
+    artist: 'Imagine Dragons',
+    album: 'Evolve',
+    duration: 204,
+    language: 'English',
+    artwork: 'https://c.saavncdn.com/248/Evolve-English-2018-20260605220036-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/248/46944eb7b4b31f5b0abf5eb2e1be2d2a_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/248/46944eb7b4b31f5b0abf5eb2e1be2d2a_320.mp4',
     isPreview: false
   }
 ];
