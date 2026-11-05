@@ -1,0 +1,39 @@
+/* Melodyx - Desktop & Laptop Specific Layouts (min-width: 992px) */
+
+@media (min-width: 992px) {
+  .mobile-menu-btn {
+    display: none !important;
+  }
+
+  .mobile-drawer {
+    display: none !important;
+  }
+
+  .hero-title {
+    font-size: 3.75rem;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+
+  .screenshot-item {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #0A0A0C;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+  }
+
+  .screenshot-item:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+  }
+}
