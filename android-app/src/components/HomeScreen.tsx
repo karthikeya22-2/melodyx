@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, History, Heart } from 'lucide-react';
+import { Settings, History, Heart, Sparkles, Radio, Music2 } from 'lucide-react';
 import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { api } from '../services/api';
@@ -237,7 +237,24 @@ export const HomeScreen: React.FC = () => {
           </div>
         )}
 
-        {/* 3. Real History / Favorites Sections (Shown when user has actual history or likes) */}
+        {/* 3. Personalized AI Recommendations Section */}
+        {selectedFilter === 'all' && recommendations.madeForYou && recommendations.madeForYou.length > 0 &&
+          renderCarousel(
+            'Made For You',
+            recommendations.madeForYou,
+            'Recommended hits & fresh picks',
+            <Sparkles className="w-4 h-4 text-slate-300" />
+          )}
+
+        {selectedFilter === 'all' && recommendations.becauseYouListenedTo && recommendations.becauseYouListenedTo.tracks.length > 0 &&
+          renderCarousel(
+            `More Like "${recommendations.becauseYouListenedTo.seedTrack.title}"`,
+            recommendations.becauseYouListenedTo.tracks,
+            `Inspired by ${recommendations.becauseYouListenedTo.seedTrack.artist}`,
+            <Radio className="w-4 h-4 text-slate-300" />
+          )}
+
+        {/* 4. Real History / Favorites Sections (Shown when user has actual history or likes) */}
         {selectedFilter === 'all' && recommendations.recentlyPlayed.length > 0 &&
           renderCarousel(
             'Recently Played',
@@ -254,7 +271,7 @@ export const HomeScreen: React.FC = () => {
             <Heart className="w-4 h-4 text-slate-300 fill-slate-300" />
           )}
 
-        {/* 4. Curated Music Hits (Filtered by selected language) */}
+        {/* 5. Curated Music Hits (Filtered by selected language) */}
         {(selectedFilter === 'all' || selectedFilter === 'telugu') &&
           renderCarousel('Popular Telugu Songs', feed.trendingTelugu || [])}
 
@@ -263,6 +280,15 @@ export const HomeScreen: React.FC = () => {
 
         {(selectedFilter === 'all' || selectedFilter === 'english') &&
           renderCarousel('Popular English Songs', feed.trendingEnglish || [])}
+
+        {/* 6. Discover More Section */}
+        {selectedFilter === 'all' && recommendations.discoverMore && recommendations.discoverMore.length > 0 &&
+          renderCarousel(
+            'Discover New Music',
+            recommendations.discoverMore,
+            'Handpicked tracks to expand your rotation',
+            <Music2 className="w-4 h-4 text-slate-300" />
+          )}
 
         {/* 5. Trending Albums: Clickable to play immediately */}
         <section className="space-y-3">

@@ -1,5 +1,6 @@
 import { Track, SyncedLyrics } from '../types';
 import CryptoJS from 'crypto-js';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 // Multi-host resolver for Android Native / Emulator / Browser
 const ENV_API_HOST = (import.meta as any).env?.VITE_API_URL || 'https://melodyx-zday.onrender.com';
@@ -30,8 +31,42 @@ export function getApiHost(): string {
 }
 
 export async function detectActiveHost(): Promise<string> {
-  const defaultHost = getApiHost();
-  return defaultHost;
+  return getApiHost();
+}
+
+/**
+ * Universal safe HTTP fetcher:
+ * Uses native Android HTTP on devices (bypassing ALL CORS and WebView restrictions),
+ * with standard browser fetch as a fallback.
+ */
+export async function queryUrlSafely(url: string, timeoutMs: number = 4000): Promise<any> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const res = await CapacitorHttp.get({
+        url,
+        connectTimeout: timeoutMs,
+        readTimeout: timeoutMs,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      if (res && res.data) {
+        return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+      }
+    } catch (e) {
+      console.warn('[HTTP] Native CapacitorHttp note:', e);
+    }
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) return await res.json();
+  } catch (e) { }
+
+  return null;
 }
 
 // JioSaavn DES-ECB 320kbps Media Stream Decryptor
@@ -53,7 +88,7 @@ export function decryptSaavnMediaUrl(encryptedUrl: string): string | null {
   }
 }
 
-// Direct 320kbps High-Bitrate Master Tracks (Guaranteed to stream with zero backend lag)
+// Direct 320kbps Master Tracks (Guaranteed to stream on any device with zero lag)
 const fallbackTelugu: Track[] = [
   {
     id: 'telugu-1',
@@ -125,6 +160,18 @@ const fallbackTelugu: Track[] = [
     artwork: 'https://c.saavncdn.com/237/Geetha-Govindam-Telugu-2018-20180921-500x500.jpg',
     audioUrl: 'https://aac.saavncdn.com/237/7942edb73e64d4e35e488337e14753b7_320.mp4',
     directStreamUrl: 'https://aac.saavncdn.com/237/7942edb73e64d4e35e488337e14753b7_320.mp4',
+    isPreview: false
+  },
+  {
+    id: 'telugu-7',
+    title: 'Oo Antava Mava',
+    artist: 'Indravathi Chauhan, Devi Sri Prasad',
+    album: 'Pushpa: The Rise',
+    duration: 229,
+    language: 'Telugu',
+    artwork: 'https://c.saavncdn.com/blob/056/Pushpa-The-Rise-Telugu-2021-20211216115409-500x500.jpg',
+    audioUrl: 'https://aac.saavncdn.com/449/b3ed2e3bd6e4dedac01cddcfe6a435b2_320.mp4',
+    directStreamUrl: 'https://aac.saavncdn.com/449/b3ed2e3bd6e4dedac01cddcfe6a435b2_320.mp4',
     isPreview: false
   }
 ];
@@ -278,20 +325,8 @@ export const api = {
 
     try {
       const host = await detectActiveHost();
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2000);
-      const res = await fetch(`${host}/api/catalog/home`, { signal: controller.signal });
-      clearTimeout(timer);
-      if (res.ok) {
-        const data = await res.json();
-        // Ensure all feed tracks have working stream URLs
-        if (data?.trendingTelugu?.length) {
-          data.trendingTelugu = data.trendingTelugu.map((t: Track, i: number) => ({
-            ...t,
-            directStreamUrl: t.directStreamUrl || fallbackTelugu[i % fallbackTelugu.length]?.directStreamUrl || t.audioUrl,
-            audioUrl: t.directStreamUrl || fallbackTelugu[i % fallbackTelugu.length]?.directStreamUrl || t.audioUrl
-          }));
-        }
+      const data = await queryUrlSafely(`${host}/api/catalog/home`, 2500);
+      if (data && data.trendingTelugu) {
         cachedHomeFeed = data;
         lastHomeFeedFetch = Date.now();
         return data;
@@ -301,7 +336,7 @@ export const api = {
     return this.getInitialHomeFeed();
   },
 
-  // High-Precision Multi-Source Search Engine (JioSaavn Studio 320kbps + Server Fallback)
+  // Multi-Source Native & CORS-Free Search Engine
   async search(query: string): Promise<{ query: string; tracks: Track[] }> {
     const q = (query || '').trim();
     if (!q) {
@@ -317,93 +352,118 @@ export const api = {
     const foundTracks: Track[] = [];
     const seenIds = new Set<string>();
 
-    // 1. PRIMARY: Direct JioSaavn Studio API with Instant 320kbps Stream Decryption
+    // 1. PRIMARY: Direct JioSaavn API via Native CapacitorHttp / fetch
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&q=${encodeURIComponent(q)}&p=1&n=20`;
-      const res = await fetch(saavnUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      const saavnUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&q=${encodeURIComponent(q)}&p=1&n=25`;
+      const data = await queryUrlSafely(saavnUrl, 4500);
+      const results = data?.results || [];
+
+      for (const item of results) {
+        const songName = (item.song || '').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim();
+        const titleLower = songName.toLowerCase();
+
+        // Disqualify mega compilation jukeboxes
+        if (
+          titleLower.includes('jukebox') ||
+          titleLower.includes('mega jukebox') ||
+          titleLower.includes('full album')
+        ) {
+          continue;
         }
-      });
-      clearTimeout(timer);
 
-      if (res.ok) {
-        const data = await res.json();
-        const results = data.results || [];
+        const stream320 = decryptSaavnMediaUrl(item.encrypted_media_url);
+        const highResArt = (item.image || '')
+          .replace('150x150', '500x500')
+          .replace('http:', 'https:');
 
-        for (const item of results) {
-          const songName = (item.song || '').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim();
-          const titleLower = songName.toLowerCase();
-
-          // Skip compilation jukeboxes
-          if (
-            titleLower.includes('jukebox') ||
-            titleLower.includes('mega jukebox') ||
-            titleLower.includes('full album')
-          ) {
-            continue;
-          }
-
-          const stream320 = decryptSaavnMediaUrl(item.encrypted_media_url);
-          const highResArt = (item.image || '')
-            .replace('150x150', '500x500')
-            .replace('http:', 'https:');
-
-          const trackId = `saavn-${item.id}`;
-          if (!seenIds.has(trackId)) {
-            seenIds.add(trackId);
-            foundTracks.push({
-              id: trackId,
-              title: songName,
-              artist: (item.primary_artists || item.singers || 'Artist')
-                .replace(/&quot;/g, '"')
-                .replace(/&#039;/g, "'")
-                .trim(),
-              album: (item.album || 'Single')
-                .replace(/&quot;/g, '"')
-                .replace(/&#039;/g, "'")
-                .trim(),
-              duration: parseInt(item.duration, 10) || 210,
-              artwork: highResArt || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
-              audioUrl: stream320 || fallbackTelugu[0].audioUrl,
-              directStreamUrl: stream320 || fallbackTelugu[0].directStreamUrl,
-              language: item.language || 'Universal',
-              genre: 'Studio Track',
-              releaseYear: parseInt(item.year, 10) || new Date().getFullYear(),
-              isPreview: false
-            });
-          }
+        const trackId = `saavn-${item.id}`;
+        if (!seenIds.has(trackId)) {
+          seenIds.add(trackId);
+          foundTracks.push({
+            id: trackId,
+            title: songName,
+            artist: (item.primary_artists || item.singers || 'Artist')
+              .replace(/&quot;/g, '"')
+              .replace(/&#039;/g, "'")
+              .trim(),
+            album: (item.album || 'Single')
+              .replace(/&quot;/g, '"')
+              .replace(/&#039;/g, "'")
+              .trim(),
+            duration: parseInt(item.duration, 10) || 210,
+            artwork: highResArt || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+            audioUrl: stream320 || fallbackTelugu[0].audioUrl,
+            directStreamUrl: stream320 || fallbackTelugu[0].directStreamUrl,
+            language: item.language || 'Universal',
+            genre: 'Studio Track',
+            releaseYear: parseInt(item.year, 10) || new Date().getFullYear(),
+            isPreview: false
+          });
         }
       }
     } catch (e) {
       console.warn('[SEARCH] Direct JioSaavn engine note:', e);
     }
 
-    // 2. SECONDARY: Server Search API if server is reachable
+    // 2. SECONDARY: JioSaavn Mirror API fallback (CORS friendly)
     if (foundTracks.length < 5) {
       try {
-        const host = await detectActiveHost();
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(`${host}/api/catalog/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-        clearTimeout(timer);
-        if (res.ok) {
-          const serverData = await res.json();
-          const serverTracks: Track[] = serverData?.tracks || [];
-          for (const st of serverTracks) {
-            if (!seenIds.has(st.id)) {
-              seenIds.add(st.id);
-              foundTracks.push(st);
+        const mirrorUrl = `https://saavn.dev/api/search/songs?query=${encodeURIComponent(q)}&limit=25`;
+        const mirrorData = await queryUrlSafely(mirrorUrl, 3500);
+        const songs = mirrorData?.data?.results || [];
+
+        for (const s of songs) {
+          const trackId = `saavn-dev-${s.id}`;
+          if (!seenIds.has(trackId)) {
+            seenIds.add(trackId);
+
+            let bestAudio = '';
+            if (Array.isArray(s.downloadUrl)) {
+              const quality320 = s.downloadUrl.find((u: any) => u.quality === '320kbps');
+              const quality160 = s.downloadUrl.find((u: any) => u.quality === '160kbps');
+              bestAudio = quality320?.url || quality160?.url || s.downloadUrl[s.downloadUrl.length - 1]?.url || '';
             }
+
+            let bestArt = '';
+            if (Array.isArray(s.image)) {
+              bestArt = s.image[s.image.length - 1]?.url || s.image[0]?.url || '';
+            }
+
+            foundTracks.push({
+              id: trackId,
+              title: s.name || 'Song',
+              artist: s.primaryArtists || s.singers || 'Artist',
+              album: s.album?.name || 'Single',
+              duration: parseInt(s.duration, 10) || 210,
+              artwork: bestArt || fallbackTelugu[0].artwork,
+              audioUrl: bestAudio || fallbackTelugu[0].audioUrl,
+              directStreamUrl: bestAudio || fallbackTelugu[0].directStreamUrl,
+              language: s.language || 'Universal',
+              genre: 'Studio Single',
+              releaseYear: parseInt(s.year, 10) || new Date().getFullYear(),
+              isPreview: false
+            });
           }
         }
       } catch (e) { }
     }
 
-    // 3. TERTIARY: Curated Master Catalog Matching
+    // 3. TERTIARY: Render Server Search API
+    if (foundTracks.length < 5) {
+      try {
+        const host = await detectActiveHost();
+        const serverData = await queryUrlSafely(`${host}/api/catalog/search?q=${encodeURIComponent(q)}`, 2000);
+        const serverTracks: Track[] = serverData?.tracks || [];
+        for (const st of serverTracks) {
+          if (!seenIds.has(st.id)) {
+            seenIds.add(st.id);
+            foundTracks.push(st);
+          }
+        }
+      } catch (e) { }
+    }
+
+    // 4. QUATERNARY: Offline Curated Hits Matching
     const allFallback = [...fallbackTelugu, ...fallbackHindi, ...fallbackEnglish];
     const qLower = q.toLowerCase();
     for (const t of allFallback) {
@@ -427,14 +487,11 @@ export const api = {
   async getLyrics(track: Track): Promise<SyncedLyrics> {
     const host = await detectActiveHost();
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2000);
-      const res = await fetch(
+      const data = await queryUrlSafely(
         `${host}/api/lyrics/${track.id}?title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}`,
-        { signal: controller.signal }
+        2000
       );
-      clearTimeout(timer);
-      if (res.ok) return await res.json();
+      if (data) return data;
     } catch (e) { }
 
     return {
@@ -467,9 +524,9 @@ export const api = {
 
   async loginWithGoogle(payload: { credential?: string; googleUser?: any }) {
     const host = getApiHost();
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2000);
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2000);
       const res = await fetch(`${host}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -480,7 +537,6 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (e) { }
 
-    // Fallback local response so authentication never locks out the user
     const gUser = payload.googleUser || {};
     return {
       user: {
@@ -498,8 +554,8 @@ export const api = {
   async getGoogleConfig() {
     try {
       const host = getApiHost();
-      const res = await fetch(`${host}/api/auth/google-config`);
-      if (res.ok) return await res.json();
+      const data = await queryUrlSafely(`${host}/api/auth/google-config`, 2000);
+      if (data) return data;
     } catch (e) { }
     return {
       clientId: '631547173450-22lcvhvb8rq7lbsqsi3smucidv2mluh9.apps.googleusercontent.com',
@@ -513,8 +569,8 @@ export const api = {
   async checkForUpdates(currentVersion: string = '2.0.0') {
     try {
       const host = getApiHost();
-      const res = await fetch(`${host}/api/updates/check?version=${encodeURIComponent(currentVersion)}`);
-      if (res.ok) return await res.json();
+      const data = await queryUrlSafely(`${host}/api/updates/check?version=${encodeURIComponent(currentVersion)}`, 2000);
+      if (data) return data;
     } catch (e) { }
     return {
       isUpdateAvailable: false,

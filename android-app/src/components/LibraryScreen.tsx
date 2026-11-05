@@ -18,6 +18,7 @@ import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
 import { api, playlistStorage } from '../services/api';
 import { Playlist, Track } from '../types';
 import { ImportPlaylistModal } from './ImportPlaylistModal';
+import { recommendationEngine } from '../services/recommendationEngine';
 
 function formatDuration(sec: number): string {
   if (isNaN(sec) || sec <= 0) return '0:00';

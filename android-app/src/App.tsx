@@ -14,13 +14,65 @@ import { useMobilePlayerStore } from './store/useMobilePlayerStore';
 import { useAuthStore } from './store/useAuthStore';
 
 export const App: React.FC = () => {
-  const { currentTab } = useMobilePlayerStore();
+  const { currentTab, setCurrentTab, isFullScreenOpen, setFullScreenOpen, isOptionsMenuOpen, closeOptionsMenu, selectedPlaylist, setSelectedPlaylist } = useMobilePlayerStore();
   const { isAuthenticated } = useAuthStore();
   const [isIntroLoading, setIsIntroLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsIntroLoading(false), 1100);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Native Android Hardware Back Navigation Integration
+  useEffect(() => {
+    const handleBack = (): boolean => {
+      const state = useMobilePlayerStore.getState();
+
+      // 1. If Full-Screen Player is open, close it
+      if (state.isFullScreenOpen) {
+        state.setFullScreenOpen(false);
+        return true;
+      }
+
+      // 2. If Options BottomSheet is open, close it
+      if (state.isOptionsMenuOpen) {
+        state.closeOptionsMenu();
+        return true;
+      }
+
+      // 3. If in Playlist detail view, return to Library
+      if (state.selectedPlaylist) {
+        state.setSelectedPlaylist(null);
+        return true;
+      }
+
+      // 4. If on Search, Library, or Settings, navigate back to Home
+      if (state.currentTab !== 'home') {
+        state.setCurrentTab('home');
+        return true;
+      }
+
+      // 5. Already on Home tab with nothing open
+      return false;
+    };
+
+    (window as any).__handleHardwareBack = handleBack;
+
+    const onBackButton = (e: Event) => {
+      if (handleBack()) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    document.addEventListener('backbutton', onBackButton);
+    window.addEventListener('popstate', onBackButton);
+
+    return () => {
+      document.removeEventListener('backbutton', onBackButton);
+      window.removeEventListener('popstate', onBackButton);
+      delete (window as any).__handleHardwareBack;
+    };
   }, []);
 
   if (isIntroLoading) {
