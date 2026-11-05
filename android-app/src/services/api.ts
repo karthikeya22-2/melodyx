@@ -1,7 +1,7 @@
 import { Track, Playlist, SyncedLyrics } from '../types';
 
 // Multi-host resolver for Android Native / Emulator / Browser
-const ENV_API_HOST = (import.meta as any).env?.VITE_API_URL || '';
+const ENV_API_HOST = (import.meta as any).env?.VITE_API_URL || 'https://melodyx-zday.onrender.com';
 
 let cachedWorkingHost = typeof localStorage !== 'undefined'
   ? localStorage.getItem('melodyx_api_host') || localStorage.getItem('soundwave_api_host') || ENV_API_HOST
@@ -24,13 +24,9 @@ export function getApiHost(): string {
     if (host && host !== 'localhost' && host !== '127.0.0.1' && !host.includes('capacitor')) {
       return `http://${host}:5000`;
     }
-    // If running inside Capacitor on an Android device, default to development machine's local Wi-Fi IP
-    if (window.location.protocol === 'capacitor:' || window.location.protocol === 'https:' || host === 'localhost') {
-      return 'http://192.168.29.151:5000';
-    }
   }
 
-  return 'http://192.168.29.151:5000';
+  return 'https://melodyx-zday.onrender.com';
 }
 
 export async function detectActiveHost(): Promise<string> {
@@ -39,6 +35,7 @@ export async function detectActiveHost(): Promise<string> {
   const defaultHost = getApiHost();
   const hosts = [
     defaultHost,
+    'https://melodyx-zday.onrender.com',
     'http://192.168.29.151:5000',
     'http://10.0.2.2:5000',
     'http://localhost:5000'
