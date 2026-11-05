@@ -8,6 +8,7 @@ dist/
 build/
 *.apk
 !backend/apk/Melodyx.apk
+!music-app-website/apk/Melodyx.apk
 *.aab
 out/
 
