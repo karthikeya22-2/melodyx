@@ -4,38 +4,20 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/music-app-website/index.html" },
-    { "source": "/css/(.*)", "destination": "/music-app-website/css/$1" },
-    { "source": "/js/(.*)", "destination": "/music-app-website/js/$1" },
-    { "source": "/assets/(.*)", "destination": "/music-app-website/assets/$1" },
-    { "source": "/config/(.*)", "destination": "/music-app-website/config/$1" },
-    { "source": "/apk/(.*)", "destination": "/music-app-website/apk/$1" },
+    { "source": "/css/:path*", "destination": "/music-app-website/css/:path*" },
+    { "source": "/js/:path*", "destination": "/music-app-website/js/:path*" },
+    { "source": "/assets/:path*", "destination": "/music-app-website/assets/:path*" },
+    { "source": "/config/:path*", "destination": "/music-app-website/config/:path*" },
+    { "source": "/apk/:path*", "destination": "/music-app-website/apk/:path*" },
     { "source": "/features", "destination": "/music-app-website/features.html" },
     { "source": "/music", "destination": "/music-app-website/music.html" },
     { "source": "/about", "destination": "/music-app-website/about.html" },
     { "source": "/download", "destination": "/music-app-website/download.html" },
-    { "source": "/(.*)", "destination": "/music-app-website/$1" }
+    { "source": "/:match*", "destination": "/music-app-website/:match*" }
   ],
   "headers": [
     {
-      "source": "/(.*\\.css)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/css; charset=UTF-8"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.js)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript; charset=UTF-8"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.apk)",
+      "source": "/apk/:filename*",
       "headers": [
         {
           "key": "Content-Type",
