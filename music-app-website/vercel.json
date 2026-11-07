@@ -1,22 +1,39 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/apk/Melodyx.apk",
+      "destination": "https://github.com/karthikeya22-2/download-melodyx/raw/main/apk/Melodyx.apk",
+      "permanent": false
+    },
+    {
+      "source": "/apk/Melodyx-v2.1.0.apk",
+      "destination": "https://github.com/karthikeya22-2/download-melodyx/raw/main/apk/Melodyx.apk",
+      "permanent": false
+    },
+    {
+      "source": "/download/apk",
+      "destination": "https://github.com/karthikeya22-2/download-melodyx/raw/main/apk/Melodyx.apk",
+      "permanent": false
+    },
+    {
+      "source": "/download",
+      "destination": "/#download",
+      "permanent": false
+    },
+    {
+      "source": "/download.html",
+      "destination": "/#download",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
-      "source": "/apk/:filename*",
+      "source": "/(.*)",
       "headers": [
         {
-          "key": "Content-Type",
-          "value": "application/vnd.android.package-archive"
-        },
-        {
-          "key": "Content-Disposition",
-          "value": "attachment; filename=\"Melodyx.apk\""
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
         }
       ]
     }

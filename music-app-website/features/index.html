@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Features — Melodyx Official Android App</title>
+  <meta name="description" content="Explore the core features of Melodyx: Universal playlist importing, 320kbps lossless streaming, curated search, and seamless autoplay redirection.">
+  <link rel="icon" type="image/png" href="/assets/logo/logo.png">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/desktop.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand">
+        <img src="/assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx" class="brand-logo">
+        <span>Melodyx</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" class="nav-link">Home</a></li>
+          <li><a href="/features" class="nav-link active">Features</a></li>
+          <li><a href="/music" class="nav-link">Music Library</a></li>
+          <li><a href="/about" class="nav-link">About</a></li>
+          <li><a href="/download" class="nav-link">Download APK</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <span class="badge badge-subtle">
+          <span style="color:#10B981;">●</span> Web: Coming Soon
+        </span>
+        <a href="/download" class="btn btn-primary btn-sm btn-download-apk">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download APK</span>
+        </a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="/" class="mobile-nav-link"><span>Home</span> <span>&rarr;</span></a>
+    <a href="/features" class="mobile-nav-link"><span>Features</span> <span>&rarr;</span></a>
+    <a href="/music" class="mobile-nav-link"><span>Music Library</span> <span>&rarr;</span></a>
+    <a href="/about" class="mobile-nav-link"><span>About</span> <span>&rarr;</span></a>
+    <a href="/download" class="mobile-nav-link"><span>Download APK</span> <span>&rarr;</span></a>
+  </div>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="tagline">Capabilities &amp; Architecture</span>
+          <h2>Everything You Need in a Music App</h2>
+          <p>Built with modern technology for audiophiles and casual listeners alike.</p>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:64px; max-width:960px; margin:0 auto;">
+          <!-- Feature Detail 1: Universal Playlist Importer -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:40px; align-items:center;">
+            <div>
+              <span class="badge badge-accent" style="margin-bottom:12px;">Universal Importer</span>
+              <h3 style="font-size:1.75rem; margin-bottom:12px;">Import from Spotify, JioSaavn, YouTube &amp; Apple Music</h3>
+              <p style="font-size:1.05rem; line-height:1.6; color:var(--text-secondary); margin-bottom:16px;">
+                Tired of losing your music library when moving between apps? Melodyx features a client-side multi-platform parser that extracts full track lists from public playlist links across all major music services and resolves each song into a 320kbps studio stream.
+              </p>
+              <ul style="list-style:none; display:flex; flex-direction:column; gap:8px; font-size:0.9375rem; color:var(--text-main);">
+                <li>✓ Scrapes public Spotify embeds with zero login credentials</li>
+                <li>✓ Decrypts JioSaavn 320kbps Akamai CDN streams natively</li>
+                <li>✓ Parses YouTube and YouTube Music playlists</li>
+                <li>✓ Paste comma-separated song titles to build custom collections</li>
+              </ul>
+            </div>
+            <div style="background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-xl); padding:32px; box-shadow:var(--shadow-md);">
+              <div style="font-size:0.8125rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">Supported Sources</div>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#FFF; border-radius:10px; border:1px solid var(--border-light);">
+                  <span style="font-weight:600;">Spotify Playlists</span>
+                  <span class="badge badge-green">Supported</span>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#FFF; border-radius:10px; border:1px solid var(--border-light);">
+                  <span style="font-weight:600;">JioSaavn Playlists</span>
+                  <span class="badge badge-green">320kbps Direct</span>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#FFF; border-radius:10px; border:1px solid var(--border-light);">
+                  <span style="font-weight:600;">YouTube &amp; YT Music</span>
+                  <span class="badge badge-green">Supported</span>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#FFF; border-radius:10px; border:1px solid var(--border-light);">
+                  <span style="font-weight:600;">Apple Music Playlists</span>
+                  <span class="badge badge-green">Supported</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature Detail 2: Curated 3–4 Song Search -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:40px; align-items:center;">
+            <div style="order:2;">
+              <span class="badge badge-accent" style="margin-bottom:12px;">Smart Search</span>
+              <h3 style="font-size:1.75rem; margin-bottom:12px;">Curated 3–4 Song Search Results</h3>
+              <p style="font-size:1.05rem; line-height:1.6; color:var(--text-secondary); margin-bottom:16px;">
+                Standard streaming apps overwhelm you with 30–50 irrelevant remixes and karaoke tracks. Melodyx uses an exact matching algorithm:
+              </p>
+              <ul style="list-style:none; display:flex; flex-direction:column; gap:8px; font-size:0.9375rem; color:var(--text-main);">
+                <li>✓ <strong>Exact Match Detection:</strong> Displays the authentic track with an Exact Match badge, followed by 1 or 2 relevant recommendations (2–3 songs total).</li>
+                <li>✓ <strong>Broad / Artist Search:</strong> Returns strictly 3 to 4 top results maximum.</li>
+                <li>✓ Search history and trending suggestions stored privately on device.</li>
+              </ul>
+            </div>
+            <div style="order:1; background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-xl); padding:32px; box-shadow:var(--shadow-md);">
+              <div style="font-size:0.8125rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;">Sample Query: "Naatu Naatu"</div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="background:#FFF; padding:12px; border-radius:10px; border:1px solid #000; box-shadow:var(--shadow-sm);">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-size:0.9375rem;">Naatu Naatu</strong>
+                    <span class="badge badge-dark">🎯 Exact Match</span>
+                  </div>
+                  <div style="font-size:0.8125rem; color:var(--text-secondary);">Rahul Sipligunj, Kaala Bhairava • RRR</div>
+                </div>
+                <div style="background:#FFF; padding:12px; border-radius:10px; border:1px solid var(--border-light);">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-size:0.9375rem;">Dosti</strong>
+                    <span class="badge badge-subtle">✨ Recommended</span>
+                  </div>
+                  <div style="font-size:0.8125rem; color:var(--text-secondary);">Hemachandra • RRR</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature Detail 3: Seamless Autoplay -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:40px; align-items:center;">
+            <div>
+              <span class="badge badge-accent" style="margin-bottom:12px;">Seamless Autoplay</span>
+              <h3 style="font-size:1.75rem; margin-bottom:12px;">Auto-Redirection to Your Personal Library</h3>
+              <p style="font-size:1.05rem; line-height:1.6; color:var(--text-secondary);">
+                When you search and play a song, you never have to worry about what plays next. Once the searched track ends, Melodyx automatically transitions into your personal imported playlists, created collections, or Liked Songs, smoothly switching your view to your Library.
+              </p>
+            </div>
+            <div style="background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-xl); padding:32px; box-shadow:var(--shadow-md);">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="padding:12px; background:#FFF; border-radius:10px; border-left:4px solid var(--text-main);">
+                  <div style="font-size:0.8125rem; color:var(--text-muted); font-weight:700;">STEP 1</div>
+                  <div style="font-weight:600;">Play any searched song</div>
+                </div>
+                <div style="padding:12px; background:#FFF; border-radius:10px; border-left:4px solid var(--accent-red);">
+                  <div style="font-size:0.8125rem; color:var(--text-muted); font-weight:700;">STEP 2</div>
+                  <div style="font-weight:600;">Song finishes playing</div>
+                </div>
+                <div style="padding:12px; background:#FFF; border-radius:10px; border-left:4px solid #10B981;">
+                  <div style="font-size:0.8125rem; color:var(--text-muted); font-weight:700;">STEP 3</div>
+                  <div style="font-weight:600;">Redirects to your Imported Playlist / Liked Songs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top:60px;">
+          <a href="/download" class="btn btn-primary btn-lg btn-download-apk">
+            <span>Download Melodyx APK for Android</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>&copy; <span class="current-year">2026</span> Melodyx Music. All rights reserved.</div>
+        <div>Available for Android • Web Player Coming Soon</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./config/app-config.js"></script>
+  <script src="/js/navigation.js"></script>
+  <script src="/js/download.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
+

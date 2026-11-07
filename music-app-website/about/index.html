@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Melodyx — The Clean Music Streaming Platform</title>
+  <meta name="description" content="Learn about Melodyx: Built for speed, ad-free streaming, universal playlist importing, and total user privacy on Android.">
+  <link rel="icon" type="image/png" href="/assets/logo/logo.png">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/desktop.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand">
+        <img src="/assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx" class="brand-logo">
+        <span>Melodyx</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" class="nav-link">Home</a></li>
+          <li><a href="/features" class="nav-link">Features</a></li>
+          <li><a href="/music" class="nav-link">Music Library</a></li>
+          <li><a href="/about" class="nav-link active">About</a></li>
+          <li><a href="/download" class="nav-link">Download APK</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <span class="badge badge-subtle">
+          <span style="color:#10B981;">●</span> Web: Coming Soon
+        </span>
+        <a href="/download" class="btn btn-primary btn-sm btn-download-apk">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download APK</span>
+        </a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="/" class="mobile-nav-link"><span>Home</span> <span>&rarr;</span></a>
+    <a href="/features" class="mobile-nav-link"><span>Features</span> <span>&rarr;</span></a>
+    <a href="/music" class="mobile-nav-link"><span>Music Library</span> <span>&rarr;</span></a>
+    <a href="/about" class="mobile-nav-link"><span>About</span> <span>&rarr;</span></a>
+    <a href="/download" class="mobile-nav-link"><span>Download APK</span> <span>&rarr;</span></a>
+  </div>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:820px;">
+        <div class="section-header">
+          <span class="tagline">Our Purpose &amp; Ethos</span>
+          <h2>A Music App Built for Listeners</h2>
+          <p>Discover the philosophy, engineering, and privacy commitments behind Melodyx.</p>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:36px; font-size:1.05rem; line-height:1.75; color:var(--text-secondary);">
+          <div>
+            <h3 style="font-size:1.4rem; color:var(--text-main); margin-bottom:10px;">Why We Built Melodyx</h3>
+            <p>
+              Mainstream music apps have become cluttered with audio advertisements, paywalls, and aggressive algorithmic pushes. Users are frequently prevented from playing the exact song they requested without a monthly fee.
+            </p>
+            <p style="margin-top:12px;">
+              Melodyx was designed from first principles: a lightweight, ad-free music application for Android that provides high-bitrate 320kbps audio, respect for user autonomy, and open playlist portability.
+            </p>
+          </div>
+
+          <div>
+            <h3 style="font-size:1.4rem; color:var(--text-main); margin-bottom:10px;">Universal Playlist Portability</h3>
+            <p>
+              Your music belongs to you, not to a subscription platform. Through our built-in <strong>Universal Playlist Importer</strong>, you can paste links from Spotify, JioSaavn, YouTube, and Apple Music to immediately import and play your favorite collections with full background playback.
+            </p>
+          </div>
+
+          <div>
+            <h3 style="font-size:1.4rem; color:var(--text-main); margin-bottom:10px;">Privacy &amp; Data Ethics</h3>
+            <p>
+              Melodyx does not sell user data, serve commercial advertising, or inject tracking SDKs. Sign-in with your Google account is used solely to securely synchronize your personal library and liked songs across your devices.
+            </p>
+          </div>
+
+          <!-- FAQ Accordions -->
+          <div style="margin-top:20px;">
+            <h3 style="font-size:1.4rem; color:var(--text-main); margin-bottom:16px;">Frequently Asked Questions</h3>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px 20px;">
+                <h4 style="font-size:1rem; margin-bottom:6px;">Is Melodyx really 100% free?</h4>
+                <p style="font-size:0.9375rem; color:var(--text-secondary);">
+                  Yes. Melodyx has no subscription fees, no locked playback limits, and no audio advertisements.
+                </p>
+              </div>
+
+              <div style="background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px 20px;">
+                <h4 style="font-size:1rem; margin-bottom:6px;">Which Android versions are supported?</h4>
+                <p style="font-size:0.9375rem; color:var(--text-secondary);">
+                  Melodyx is compatible with Android 8.0 (Oreo) and above, including Android 9, 10, 11, 12, 13, 14, and 15.
+                </p>
+              </div>
+
+              <div style="background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px 20px;">
+                <h4 style="font-size:1rem; margin-bottom:6px;">When is the Web Player launching?</h4>
+                <p style="font-size:0.9375rem; color:var(--text-secondary);">
+                  The Melodyx Web Player is actively in development. You can preview free Creative Commons tracks on our Music Library page today, and the full streaming web app will be available soon.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top:54px;">
+          <a href="/download" class="btn btn-primary btn-lg btn-download-apk">
+            <span>Download Melodyx APK</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>&copy; <span class="current-year">2026</span> Melodyx Music. All rights reserved.</div>
+        <div>Simple • Fast • Free</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./config/app-config.js"></script>
+  <script src="/js/navigation.js"></script>
+  <script src="/js/download.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
+
