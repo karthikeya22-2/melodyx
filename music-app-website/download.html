@@ -18,7 +18,7 @@
   <header class="navbar">
     <div class="container nav-container">
       <a href="index.html" class="brand">
-        <img src="./assets/logo/logo.png" alt="Melodyx" class="brand-logo">
+        <img src="./assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx" class="brand-logo">
         <span>Melodyx</span>
       </a>
 
@@ -67,7 +67,7 @@
 
         <div class="download-card">
           <div class="download-top">
-            <img src="./assets/logo/logo.png" alt="Melodyx Icon" class="download-logo">
+            <img src="./assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx Icon" class="download-logo">
             <div>
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
                 <h3 style="font-size:1.6rem; font-weight:800;">Melodyx for Android</h3>
@@ -87,7 +87,7 @@
             </div>
             <div class="spec-item">
               <div class="spec-label">Package Size</div>
-              <div class="spec-val">6.35 MB</div>
+              <div class="spec-val">6.42 MB</div>
             </div>
             <div class="spec-item">
               <div class="spec-label">Minimum OS</div>
@@ -95,7 +95,7 @@
             </div>
             <div class="spec-item">
               <div class="spec-label">Target SDK</div>
-              <div class="spec-val">Android 14 (API 34)</div>
+              <div class="spec-val">Android 15 (API 35)</div>
             </div>
             <div class="spec-item">
               <div class="spec-label">Architecture</div>
@@ -109,7 +109,7 @@
 
           <!-- Primary Download Button -->
           <div style="display:flex; flex-direction:column; gap:14px; align-items:center; margin: 32px 0;">
-            <a href="apk/Melodyx.apk" class="btn btn-primary btn-lg btn-download-apk" style="width:100%; max-width:480px; justify-content:center; padding:16px 24px; font-size:1.05rem;">
+            <a href="./apk/Melodyx.apk" download="Melodyx.apk" class="btn btn-primary btn-lg btn-download-apk" style="width:100%; max-width:480px; justify-content:center; padding:16px 24px; font-size:1.05rem;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -118,8 +118,9 @@
               <span>Download Melodyx APK (v2.1.0)</span>
             </a>
 
-            <div style="font-size:0.8125rem; color:var(--text-muted); display:flex; gap:12px; align-items:center;">
-              <span>Direct Link: <code>/apk/Melodyx.apk</code></span> • <span>SHA-256 Verified</span>
+            <div style="font-size:0.8125rem; color:var(--text-muted); display:flex; flex-direction:column; gap:6px; align-items:center;">
+              <div><span>Direct Server: <code>Melodyx.apk (6.35 MB)</code></span> • <span>SHA-256 Verified</span></div>
+              <div>Mirror link: <a href="https://github.com/karthikeya22-2/download-melodyx/raw/main/apk/Melodyx.apk" download="Melodyx.apk" style="color:var(--accent-red); text-decoration:underline; font-weight:600;">Download directly from GitHub</a></div>
             </div>
           </div>
 

@@ -1,13 +1,18 @@
 // Melodyx APK Download & Installation Controller
 
 document.addEventListener('DOMContentLoaded', () => {
-  const downloadBtns = document.querySelectorAll('.btn-download-apk');
   const config = window.APP_CONFIG || {};
+  const downloadBtns = document.querySelectorAll('.btn-download-apk');
+  const apkPath = './apk/Melodyx.apk';
 
   downloadBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      initiateApkDownload();
+    // Ensure direct native download attributes
+    btn.setAttribute('href', apkPath);
+    btn.setAttribute('download', 'Melodyx.apk');
+
+    btn.addEventListener('click', () => {
+      // Show notice without blocking browser native download
+      showDownloadNotice(`Downloading Melodyx ${config.version || 'v2.1.0'} (${config.apkSize || '6.35 MB'})... Check your downloads bar.`);
     });
   });
 
@@ -20,28 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function initiateApkDownload() {
-  const config = window.APP_CONFIG || {};
-  const downloadUrl = config.downloadUrl || 'apk/Melodyx.apk';
-  const fallbackUrl = config.fallbackDownloadUrl;
-
-  showDownloadNotice(`Downloading Melodyx ${config.version || 'v2.1.0'} (${config.apkSize || '6.35 MB'})...`);
-
-  // Direct programmatic download anchor
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.download = `Melodyx-${config.version || '2.1.0'}.apk`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  // Verification fallback: if local file isn't reachable (e.g. standalone CDN)
-  setTimeout(() => {
-    showDownloadNotice('Download initiated! If your download did not start automatically, <a href="' + (fallbackUrl || downloadUrl) + '" style="text-decoration:underline;font-weight:bold;color:#FFF;">click here to retry</a>.', 8000);
-  }, 2500);
-}
-
-function showDownloadNotice(message, duration = 5000) {
+function showDownloadNotice(message, duration = 6000) {
   let toast = document.getElementById('downloadToast');
   if (!toast) {
     toast = document.createElement('div');
@@ -74,4 +58,3 @@ function showDownloadNotice(message, duration = 5000) {
     }
   }, duration);
 }
-

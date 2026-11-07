@@ -10,16 +10,45 @@ import { BottomSheetMenu } from './components/BottomSheetMenu';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { CompulsoryAuthScreen } from './components/CompulsoryAuthScreen';
 import { GoogleAuthModal } from './components/GoogleAuthModal';
+import { UpdateModal, UpdateInfo } from './components/UpdateModal';
 import { useMobilePlayerStore } from './store/useMobilePlayerStore';
 import { useAuthStore } from './store/useAuthStore';
+import { api } from './services/api';
+import { MelodyxMedia } from './services/melodyxNativeMedia';
 
 export const App: React.FC = () => {
   const { currentTab, setCurrentTab, isFullScreenOpen, setFullScreenOpen, isOptionsMenuOpen, closeOptionsMenu, selectedPlaylist, setSelectedPlaylist } = useMobilePlayerStore();
   const { isAuthenticated } = useAuthStore();
   const [isIntroLoading, setIsIntroLoading] = useState(true);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsIntroLoading(false), 1100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Check for updates on startup
+  useEffect(() => {
+    const checkUpdatesOnStart = async () => {
+      try {
+        let currentVer = '2.0.0';
+        let currentCode = 1;
+        try {
+          const verInfo = await MelodyxMedia.getAppVersion();
+          if (verInfo && verInfo.versionName) {
+            currentVer = verInfo.versionName;
+            currentCode = Number(verInfo.versionCode) || 1;
+          }
+        } catch (e) { }
+
+        const res = await api.checkForUpdates(currentVer, currentCode);
+        if (res && res.isUpdateAvailable) {
+          setUpdateInfo(res);
+        }
+      } catch (e) { }
+    };
+
+    const timer = setTimeout(checkUpdatesOnStart, 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -108,6 +137,9 @@ export const App: React.FC = () => {
 
       {/* Global Google Authentication Gate Modal */}
       <GoogleAuthModal />
+
+      {/* In-App Release Update Modal */}
+      <UpdateModal updateInfo={updateInfo} onClose={() => setUpdateInfo(null)} />
     </div>
   );
 };

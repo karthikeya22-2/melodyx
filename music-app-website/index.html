@@ -1180,7 +1180,7 @@ p {
   <header class="navbar">
     <div class="container nav-container">
       <a href="index.html" class="brand">
-        <img src="./assets/logo/logo.png" alt="Melodyx Logo" class="brand-logo">
+        <img src="./assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx Logo" class="brand-logo">
         <span>Melodyx</span>
       </a>
 
@@ -1301,7 +1301,7 @@ p {
             <div class="phone-screen">
               <div class="app-mock-header">
                 <div class="app-mock-logo">
-                  <img src="./assets/logo/logo.png" alt="Melodyx">
+                  <img src="./assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx">
                   <span>Melodyx</span>
                 </div>
                 <span style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:12px; font-size:9px; color:#EEE;">320kbps Lossless</span>
@@ -1559,7 +1559,7 @@ p {
 
         <div class="download-card">
           <div class="download-top">
-            <img src="./assets/logo/logo.png" alt="Melodyx App Icon" class="download-logo">
+            <img src="./assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx App Icon" class="download-logo">
             <div>
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
                 <h3 style="font-size:1.5rem; font-weight:800;">Melodyx for Android</h3>
@@ -1578,7 +1578,7 @@ p {
             </div>
             <div class="spec-item">
               <div class="spec-label">File Size</div>
-              <div class="spec-val">6.35 MB</div>
+              <div class="spec-val">6.42 MB</div>
             </div>
             <div class="spec-item">
               <div class="spec-label">Compatibility</div>
@@ -1592,17 +1592,18 @@ p {
 
           <!-- Download Action -->
           <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-            <a href="apk/Melodyx.apk" class="btn btn-primary btn-lg btn-download-apk" style="width:100%; justify-content:center; max-width:440px;">
+            <a href="./apk/Melodyx.apk" download="Melodyx.apk" class="btn btn-primary btn-lg btn-download-apk" style="width:100%; justify-content:center; max-width:440px;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>Download Official APK (6.35 MB)</span>
+              <span>Download Official APK (6.42 MB)</span>
             </a>
 
-            <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
-              <span>Verified Clean &amp; Signed</span> • <span>SHA-256 Validated</span> • <span>Zero Ads</span>
+            <div style="font-size:0.75rem; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:4px;">
+              <div><span>Verified Clean &amp; Signed</span> • <span>SHA-256 Validated</span> • <span>Zero Ads</span></div>
+              <div>Mirror: <a href="https://github.com/karthikeya22-2/download-melodyx/raw/main/apk/Melodyx.apk" download="Melodyx.apk" style="color:var(--accent-red); text-decoration:underline; font-weight:600;">Download from GitHub CDN</a></div>
             </div>
           </div>
 
@@ -1661,7 +1662,7 @@ p {
       <div class="footer-grid">
         <div class="footer-brand">
           <div style="display:flex; align-items:center; gap:10px;">
-            <img src="./assets/logo/logo.png" alt="Melodyx" style="width:32px; height:32px; border-radius:8px;">
+            <img src="./assets/logo/logo.png" onerror="this.onerror=null;this.src='./assets/logo/logo.jpg';" alt="Melodyx" style="width:32px; height:32px; border-radius:8px;">
             <span style="font-weight:800; font-size:1.15rem; color:var(--text-main);">Melodyx</span>
           </div>
           <p style="font-size:0.875rem; color:var(--text-secondary); margin-top:6px;">

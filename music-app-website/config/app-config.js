@@ -6,27 +6,28 @@ window.APP_CONFIG = {
   tagline: 'Your Music. Your World.',
   version: '2.1.0',
   releaseDate: 'November 2026',
-  apkSize: '6.35 MB',
+  apkSize: '6.42 MB',
   minAndroid: 'Android 8.0+ (Oreo, Pie, 10, 11, 12, 13, 14, 15)',
-  targetSdk: 'Android 14 (API 34)',
+  targetSdk: 'Android 15 (API 35)',
   packageName: 'com.spotube.soundwave',
   architecture: 'Universal (arm64-v8a, armeabi-v7a, x86_64)',
   license: 'Free & Open Music Experience',
   
   // Download URLs
-  downloadUrl: 'apk/Melodyx.apk',
-  fallbackDownloadUrl: 'https://melodyx-zday.onrender.com/api/updates/download',
-  githubUrl: 'https://github.com',
+  downloadUrl: './apk/Melodyx.apk',
+  fallbackDownloadUrl: 'https://github.com/karthikeya22-2/download-melodyx/raw/main/apk/Melodyx.apk',
+  githubUrl: 'https://github.com/karthikeya22-2/download-melodyx',
   webAppStatus: 'Coming Soon',
 
   // What's New in v2.1.0
   changelog: [
+    'Fixed Missing Music Notification – Real-time media notification with play/pause, next/previous buttons, and album artwork.',
+    'Android Lock-Screen Controls – Full lock-screen media player and timeline scrubber support via AndroidX MediaSession.',
+    'Enhanced Background Playback – Uninterrupted low-power audio streaming with screen off.',
+    'In-App Auto Updater – Direct one-tap update download and package installation.',
     'Universal Playlist Importer – Import playlists from Spotify, JioSaavn, YouTube, and Apple Music directly.',
     'Curated Search Engine – Returns strictly 3–4 results max with smart Exact Match identification.',
-    'Seamless Autoplay Redirection – Automatically transitions from search into your imported playlists or liked songs.',
-    'Pure 320kbps Akamai CDN Streaming – High-fidelity lossless audio streaming with zero ads and zero lag.',
-    'Android Hardware Back Button Fix – Natural home navigation without accidental app exits.',
-    'Synced Lyrics Engine – Real-time synchronized lyrics support.'
+    'Seamless Autoplay Redirection – Transitions from search directly to your imported or liked playlists.'
   ],
 
   // Legally Available Free Music Preview Tracks (Creative Commons CC-BY / Free Music Archive / Jamendo)

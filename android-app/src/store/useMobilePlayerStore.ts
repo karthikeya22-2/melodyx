@@ -3,6 +3,7 @@ import { Track, Playlist } from '../types';
 import { recommendationEngine } from '../services/recommendationEngine';
 import { getApiHost, api } from '../services/api';
 import { useAuthStore } from './useAuthStore';
+import { MelodyxMedia } from '../services/melodyxNativeMedia';
 
 interface MobilePlayerStore {
   currentTrack: Track | null;
@@ -81,6 +82,20 @@ function updateMediaSession(
   nextAction: () => void,
   prevAction: () => void
 ) {
+  // 1. Android Native Foreground Service Media Notification & Lock Screen Controls
+  try {
+    MelodyxMedia.updateMetadata({
+      title: track.title,
+      artist: track.artist,
+      album: track.album || '',
+      artwork: track.artwork || '',
+      duration: Math.floor(track.duration || 0),
+      position: Math.floor(audioElement.currentTime || 0),
+      isPlaying: isPlaying
+    }).catch(() => {});
+  } catch (e) { }
+
+  // 2. Standard Web MediaSession (Fallback / Chromium)
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
@@ -116,9 +131,60 @@ function updateMediaSession(
   }
 }
 
+// Global bridge for hardware media buttons and Android lock-screen controls
+(window as any).__melodyx_nativePlay = () => {
+  const s = useMobilePlayerStore.getState();
+  if (!s.isPlaying) s.togglePlay();
+};
+(window as any).__melodyx_nativePause = () => {
+  const s = useMobilePlayerStore.getState();
+  if (s.isPlaying) s.togglePlay();
+};
+(window as any).__melodyx_nativeToggle = () => {
+  useMobilePlayerStore.getState().togglePlay();
+};
+(window as any).__melodyx_nativeNext = () => {
+  useMobilePlayerStore.getState().nextTrack();
+};
+(window as any).__melodyx_nativePrev = () => {
+  useMobilePlayerStore.getState().previousTrack();
+};
+(window as any).__melodyx_nativeSeek = (sec: number) => {
+  useMobilePlayerStore.getState().seek(sec);
+};
+
+try {
+  MelodyxMedia.addListener('mediaAction', ({ action, position }) => {
+    const s = useMobilePlayerStore.getState();
+    if (action.includes('TOGGLE')) s.togglePlay();
+    else if (action.includes('PLAY')) { if (!s.isPlaying) s.togglePlay(); }
+    else if (action.includes('PAUSE')) { if (s.isPlaying) s.togglePlay(); }
+    else if (action.includes('NEXT')) s.nextTrack();
+    else if (action.includes('PREV')) s.previousTrack();
+    else if (action.includes('SEEK') && position !== undefined) s.seek(position);
+  });
+  MelodyxMedia.requestNotificationPermission().catch(() => {});
+} catch (e) { }
+
+let lastNativeProgressUpdate = 0;
+
 export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
   audioElement.addEventListener('timeupdate', () => {
     set({ progress: audioElement.currentTime });
+
+    // Sync native Android lock-screen & notification progress once per second
+    const now = Date.now();
+    if (now - lastNativeProgressUpdate > 1000) {
+      lastNativeProgressUpdate = now;
+      try {
+        MelodyxMedia.updatePlaybackState({
+          isPlaying: !audioElement.paused,
+          position: Math.floor(audioElement.currentTime),
+          duration: Math.floor(audioElement.duration || 0)
+        }).catch(() => {});
+      } catch (e) { }
+    }
+
     if ('mediaSession' in navigator && audioElement.duration) {
       try {
         navigator.mediaSession.setPositionState({
@@ -330,21 +396,49 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
         audioElement.pause();
         set({ isPlaying: false });
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        try {
+          MelodyxMedia.updatePlaybackState({
+            isPlaying: false,
+            position: Math.floor(audioElement.currentTime),
+            duration: Math.floor(audioElement.duration || 0)
+          }).catch(() => {});
+        } catch (e) { }
       } else {
         audioElement.play().catch(console.warn);
         set({ isPlaying: true });
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        try {
+          MelodyxMedia.updatePlaybackState({
+            isPlaying: true,
+            position: Math.floor(audioElement.currentTime),
+            duration: Math.floor(audioElement.duration || 0)
+          }).catch(() => {});
+        } catch (e) { }
       }
     },
 
     pause: () => {
       audioElement.pause();
       set({ isPlaying: false });
+      try {
+        MelodyxMedia.updatePlaybackState({
+          isPlaying: false,
+          position: Math.floor(audioElement.currentTime),
+          duration: Math.floor(audioElement.duration || 0)
+        }).catch(() => {});
+      } catch (e) { }
     },
 
     resume: () => {
       audioElement.play().catch(console.warn);
       set({ isPlaying: true });
+      try {
+        MelodyxMedia.updatePlaybackState({
+          isPlaying: true,
+          position: Math.floor(audioElement.currentTime),
+          duration: Math.floor(audioElement.duration || 0)
+        }).catch(() => {});
+      } catch (e) { }
     },
 
     redirectToUserPlaylist: (): boolean => {
@@ -479,6 +573,13 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
       if (isNaN(seconds) || seconds < 0) return;
       audioElement.currentTime = seconds;
       set({ progress: seconds });
+      try {
+        MelodyxMedia.updatePlaybackState({
+          isPlaying: !audioElement.paused,
+          position: Math.floor(seconds),
+          duration: Math.floor(audioElement.duration || 0)
+        }).catch(() => {});
+      } catch (e) { }
     },
 
     

@@ -666,18 +666,32 @@ export const api = {
     };
   },
 
-  async checkForUpdates(currentVersion: string = '2.0.0') {
+  async checkForUpdates(currentVersion: string = '2.0.0', currentVersionCode: number = 1) {
     try {
       const host = getApiHost();
-      const data = await queryUrlSafely(`${host}/api/updates/check?version=${encodeURIComponent(currentVersion)}`, 2000);
-      if (data) return data;
+      const data = await queryUrlSafely(`${host}/api/updates/check?version=${encodeURIComponent(currentVersion)}&versionCode=${currentVersionCode}`, 3000);
+      if (data) {
+        if (data.apkDownloadUrl && data.apkDownloadUrl.startsWith('/')) {
+          data.apkDownloadUrl = `${host}${data.apkDownloadUrl}`;
+        }
+        if (data.downloadUrl && data.downloadUrl.startsWith('/')) {
+          data.downloadUrl = `${host}${data.downloadUrl}`;
+        }
+        return data;
+      }
     } catch (e) { }
     return {
       isUpdateAvailable: false,
       clientVersion: currentVersion,
+      clientVersionCode: currentVersionCode,
       latestVersion: currentVersion,
-      title: 'Melodyx',
+      latestVersionCode: currentVersionCode,
+      title: 'Melody X',
+      releaseNotes: '',
       changelog: [],
+      apkDownloadUrl: '',
+      downloadUrl: '',
+      mandatoryUpdate: false,
       checkedAt: new Date().toISOString()
     };
   }

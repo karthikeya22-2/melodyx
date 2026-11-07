@@ -1,22 +1,28 @@
 const express = require('express');
 const router = express.Router();
 
-// Current production release configuration
-// Update 'latestVersion' here whenever releasing a new Melodyx version
+// Melody X Production Remote Release Configuration
 const LATEST_RELEASE = {
-  version: '2.0.0',
+  latestVersion: '2.1.0',
+  latestVersionCode: 2,
+  version: '2.1.0', // backwards compatibility
+  versionCode: 2,
   releaseDate: 'November 2026',
-  minSupportedVersion: '1.0.0',
-  title: 'Melodyx Shiny Silver Release',
+  minimumSupportedVersion: '1.0.0',
+  minimumSupportedVersionCode: 1,
+  minSupportedVersion: '1.0.0', // backwards compatibility
+  title: 'Melody X Notification & Lock-Screen Update',
+  releaseNotes: "What's New in Melody X:\n- Fixed missing music notification.\n- Added lock-screen music controls.\n- Improved background playback.\n- Improved notification synchronization.\n- General stability improvements.",
   changelog: [
-    'Matte black UI with shiny silver chrome accents',
-    'Full Google Cloud OAuth integration',
-    'Ultra-fast multi-source search (JioSaavn + Spotify)',
-    'Dynamic autoplay from recent searches and custom playlists',
-    'Zero-latency animated waveform scrubber',
-    'Background audio playback with screen off & lock-screen media controls'
+    'Fixed missing music notification',
+    'Added lock-screen music controls',
+    'Improved background playback',
+    'Improved notification synchronization',
+    'General stability improvements'
   ],
-  downloadUrl: '/download/apk'
+  apkDownloadUrl: '/download/apk',
+  downloadUrl: '/download/apk',
+  mandatoryUpdate: false
 };
 
 function compareVersions(v1, v2) {
@@ -31,22 +37,41 @@ function compareVersions(v1, v2) {
   return 0;
 }
 
-// GET /api/updates/check?version=2.0.0
+// GET /api/updates/check?version=2.0.0&versionCode=1
 router.get('/check', (req, res) => {
   const clientVersion = req.query.version || '2.0.0';
-  const hasUpdate = compareVersions(LATEST_RELEASE.version, clientVersion) > 0;
+  const clientVersionCode = parseInt(req.query.versionCode || '1', 10);
+
+  let hasUpdate = false;
+  if (!isNaN(clientVersionCode) && clientVersionCode > 0) {
+    hasUpdate = clientVersionCode < LATEST_RELEASE.latestVersionCode;
+  } else {
+    hasUpdate = compareVersions(LATEST_RELEASE.latestVersion, clientVersion) > 0;
+  }
+
+  const isMandatory = LATEST_RELEASE.mandatoryUpdate ||
+    (clientVersionCode < LATEST_RELEASE.minimumSupportedVersionCode) ||
+    (compareVersions(LATEST_RELEASE.minimumSupportedVersion, clientVersion) > 0);
 
   res.json({
     isUpdateAvailable: hasUpdate,
     clientVersion,
-    latestVersion: LATEST_RELEASE.version,
+    clientVersionCode,
+    latestVersion: LATEST_RELEASE.latestVersion,
+    latestVersionCode: LATEST_RELEASE.latestVersionCode,
+    version: LATEST_RELEASE.latestVersion,
+    versionCode: LATEST_RELEASE.latestVersionCode,
     releaseDate: LATEST_RELEASE.releaseDate,
     title: LATEST_RELEASE.title,
+    releaseNotes: LATEST_RELEASE.releaseNotes,
     changelog: LATEST_RELEASE.changelog,
+    apkDownloadUrl: LATEST_RELEASE.apkDownloadUrl,
     downloadUrl: LATEST_RELEASE.downloadUrl,
+    mandatoryUpdate: isMandatory,
+    minimumSupportedVersion: LATEST_RELEASE.minimumSupportedVersion,
+    minimumSupportedVersionCode: LATEST_RELEASE.minimumSupportedVersionCode,
     checkedAt: new Date().toISOString()
   });
 });
 
 module.exports = router;
-

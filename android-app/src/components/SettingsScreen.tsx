@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sliders,
   Volume2,
@@ -15,6 +15,8 @@ import {
 import { recommendationEngine } from '../services/recommendationEngine';
 import { api } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
+import { MelodyxMedia } from '../services/melodyxNativeMedia';
+import { UpdateModal, UpdateInfo } from './UpdateModal';
 
 export const SettingsScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -22,6 +24,9 @@ export const SettingsScreen: React.FC = () => {
   const [normalizeVolume, setNormalizeVolume] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [installedVersion, setInstalledVersion] = useState('2.1.0');
+  const [installedVersionCode, setInstalledVersionCode] = useState(2);
+  const [activeModalUpdate, setActiveModalUpdate] = useState<UpdateInfo | null>(null);
   const [updateStatus, setUpdateStatus] = useState<{
     checked: boolean;
     isAvailable: boolean;
@@ -29,6 +34,15 @@ export const SettingsScreen: React.FC = () => {
     changelog?: string[];
     downloadUrl?: string;
   } | null>(null);
+
+  useEffect(() => {
+    MelodyxMedia.getAppVersion().then(v => {
+      if (v && v.versionName) {
+        setInstalledVersion(v.versionName);
+        setInstalledVersionCode(Number(v.versionCode) || 2);
+      }
+    }).catch(() => {});
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -48,26 +62,27 @@ export const SettingsScreen: React.FC = () => {
   const handleCheckUpdates = async () => {
     setIsCheckingUpdate(true);
     try {
-      const res = await api.checkForUpdates('2.0.0');
+      const res = await api.checkForUpdates(installedVersion, installedVersionCode);
       setUpdateStatus({
         checked: true,
         isAvailable: Boolean(res.isUpdateAvailable),
-        latestVersion: res.latestVersion || '2.0.0',
+        latestVersion: res.latestVersion || installedVersion,
         changelog: res.changelog || [],
-        downloadUrl: res.downloadUrl
+        downloadUrl: res.apkDownloadUrl || res.downloadUrl
       });
       if (res.isUpdateAvailable) {
+        setActiveModalUpdate(res);
         showToast(`Update v${res.latestVersion} available!`);
       } else {
-        showToast('App is up to date (v2.0.0)');
+        showToast(`App is up to date (v${installedVersion})`);
       }
     } catch (e) {
       setUpdateStatus({
         checked: true,
         isAvailable: false,
-        latestVersion: '2.0.0'
+        latestVersion: installedVersion
       });
-      showToast('App is up to date (v2.0.0)');
+      showToast(`App is up to date (v${installedVersion})`);
     } finally {
       setIsCheckingUpdate(false);
     }
@@ -281,13 +296,16 @@ export const SettingsScreen: React.FC = () => {
               <img src="/logo.png" alt="Melodyx" className="w-5 h-5 rounded object-cover shadow-sm" />
               <span>Melodyx Music</span>
             </span>
-            <span className="text-xs font-mono text-white">v2.0.0</span>
+            <span className="text-xs font-mono text-white">v{installedVersion}</span>
           </div>
           <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-            Full-track continuous music streaming with animated waveform scrubbing, Google Cloud authentication, and local recommendation intelligence.
+            Full-track continuous music streaming with animated waveform scrubbing, Google Cloud authentication, lock-screen media controls, and local recommendation intelligence.
           </p>
         </div>
       </div>
+
+      {/* Manual Update Check Modal */}
+      <UpdateModal updateInfo={activeModalUpdate} onClose={() => setActiveModalUpdate(null)} />
     </div>
   );
 };

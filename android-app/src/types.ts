@@ -6,6 +6,7 @@ export interface Track {
   artwork: string;
   duration: number; // in seconds
   audioUrl?: string;
+  directStreamUrl?: string;
   language?: string;
   genre?: string;
   releaseYear?: number;
@@ -19,6 +20,8 @@ export interface Playlist {
   coverUrl: string;
   trackCount?: number;
   tracks?: Track[];
+  source?: string;
+  sourceUrl?: string;
 }
 
 export interface SyncedLyrics {

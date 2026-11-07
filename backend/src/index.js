@@ -40,12 +40,15 @@ const apkDir = path.join(__dirname, '../apk');
 if (!fs.existsSync(apkDir)) fs.mkdirSync(apkDir, { recursive: true });
 
 app.get('/download/apk', (req, res) => {
+  const v210Apk = path.join(apkDir, 'Melodyx-v2.1.0.apk');
   const customApk = path.join(apkDir, 'Melodyx.apk');
   const gradleDebugApk = path.join(__dirname, '../../android-app/android/app/build/outputs/apk/debug/app-debug.apk');
   const gradleReleaseApk = path.join(__dirname, '../../android-app/android/app/build/outputs/apk/release/app-release.apk');
   const gradleUnsignedApk = path.join(__dirname, '../../android-app/android/app/build/outputs/apk/release/app-release-unsigned.apk');
 
-  if (fs.existsSync(customApk)) {
+  if (fs.existsSync(v210Apk)) {
+    return res.download(v210Apk, 'Melodyx-v2.1.0.apk');
+  } else if (fs.existsSync(customApk)) {
     return res.download(customApk, 'Melodyx.apk');
   } else if (fs.existsSync(gradleDebugApk)) {
     return res.download(gradleDebugApk, 'Melodyx.apk');
