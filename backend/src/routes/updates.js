@@ -53,6 +53,11 @@ router.get('/check', (req, res) => {
     (clientVersionCode < LATEST_RELEASE.minimumSupportedVersionCode) ||
     (compareVersions(LATEST_RELEASE.minimumSupportedVersion, clientVersion) > 0);
 
+  // Compute absolute download URL so existing legacy apps can open it in browser directly
+  const host = req.get('host') || 'melodyx-zday.onrender.com';
+  const protocol = req.headers['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
+  const absoluteDownloadUrl = `${protocol}://${host}/download/apk`;
+
   res.json({
     isUpdateAvailable: hasUpdate,
     clientVersion,
@@ -65,8 +70,9 @@ router.get('/check', (req, res) => {
     title: LATEST_RELEASE.title,
     releaseNotes: LATEST_RELEASE.releaseNotes,
     changelog: LATEST_RELEASE.changelog,
-    apkDownloadUrl: LATEST_RELEASE.apkDownloadUrl,
-    downloadUrl: LATEST_RELEASE.downloadUrl,
+    apkDownloadUrl: absoluteDownloadUrl,
+    downloadUrl: absoluteDownloadUrl,
+    websiteUrl: 'https://download-melodyx.vercel.app',
     mandatoryUpdate: isMandatory,
     minimumSupportedVersion: LATEST_RELEASE.minimumSupportedVersion,
     minimumSupportedVersionCode: LATEST_RELEASE.minimumSupportedVersionCode,
