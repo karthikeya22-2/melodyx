@@ -1,12 +1,14 @@
 package com.spotube.soundwave;
 
 import android.Manifest;
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -56,7 +58,6 @@ public class MelodyxMediaPlugin extends Plugin {
             }
             notifyListeners("mediaAction", ret);
 
-            // Also call direct window handler in case listeners were initialized before bridge
             new Handler(Looper.getMainLooper()).post(() -> {
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     String js;
@@ -175,6 +176,54 @@ public class MelodyxMediaPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openUrlInBrowser(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || url.isEmpty()) {
+            call.reject("url is required");
+            return;
+        }
+
+        try {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(browserIntent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Failed to open browser: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void downloadViaDownloadManager(PluginCall call) {
+        String downloadUrl = call.getString("downloadUrl");
+        if (downloadUrl == null || downloadUrl.isEmpty()) {
+            call.reject("downloadUrl is required");
+            return;
+        }
+
+        try {
+            Context context = getContext();
+            DownloadManager dm = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
+            request.setTitle("Melodyx Update");
+            request.setDescription("Downloading latest Melodyx APK...");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "Melodyx.apk");
+            request.setMimeType("application/vnd.android.package-archive");
+            long id = dm.enqueue(request);
+
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("downloadId", id);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("DownloadManager failed: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
     public void downloadAndInstallApk(PluginCall call) {
         String downloadUrl = call.getString("downloadUrl");
         if (downloadUrl == null || downloadUrl.isEmpty()) {
@@ -192,16 +241,39 @@ public class MelodyxMediaPlugin extends Plugin {
                     destinationFile.delete();
                 }
 
-                URL url = new URL(downloadUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
-                connection.setRequestProperty("User-Agent", "Melodyx-Android-Updater");
-                connection.connect();
+                URL currentUrl = new URL(downloadUrl);
+                HttpURLConnection connection = null;
+                int redirectCount = 0;
 
-                int responseCode = connection.getResponseCode();
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    call.reject("Server returned HTTP " + responseCode);
+                while (redirectCount < 5) {
+                    connection = (HttpURLConnection) currentUrl.openConnection();
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(30000);
+                    connection.setInstanceFollowRedirects(true);
+                    connection.setRequestProperty("User-Agent", "Melodyx-Android-Updater");
+                    connection.connect();
+
+                    int responseCode = connection.getResponseCode();
+                    if (responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
+                        responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                        responseCode == 307 || responseCode == 308) {
+                        String newLocation = connection.getHeaderField("Location");
+                        if (newLocation != null && !newLocation.isEmpty()) {
+                            currentUrl = new URL(currentUrl, newLocation);
+                            redirectCount++;
+                            continue;
+                        }
+                    }
+
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        call.reject("Server returned HTTP " + responseCode);
+                        return;
+                    }
+                    break;
+                }
+
+                if (connection == null) {
+                    call.reject("Failed to connect to server");
                     return;
                 }
 
@@ -219,7 +291,7 @@ public class MelodyxMediaPlugin extends Plugin {
                     output.write(data, 0, count);
 
                     long now = System.currentTimeMillis();
-                    if (fileLength > 0 && (now - lastReportTime > 250 || total == fileLength)) {
+                    if (fileLength > 0 && (now - lastReportTime > 200 || total == fileLength)) {
                         lastReportTime = now;
                         int percent = (int) ((total * 100) / fileLength);
                         JSObject progressObj = new JSObject();
@@ -236,14 +308,18 @@ public class MelodyxMediaPlugin extends Plugin {
 
                 // Launch package installer on main thread
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    boolean launched = launchApkInstaller(context, destinationFile);
-                    if (launched) {
-                        JSObject res = new JSObject();
+                    int status = launchApkInstaller(context, destinationFile);
+                    JSObject res = new JSObject();
+                    res.put("filePath", destinationFile.getAbsolutePath());
+                    if (status == 1) {
                         res.put("success", true);
-                        res.put("filePath", destinationFile.getAbsolutePath());
+                        call.resolve(res);
+                    } else if (status == 2) {
+                        res.put("success", false);
+                        res.put("needsPermission", true);
                         call.resolve(res);
                     } else {
-                        call.reject("Permission or package installer launch failed");
+                        call.reject("Failed to launch package installer");
                     }
                 });
 
@@ -267,24 +343,31 @@ public class MelodyxMediaPlugin extends Plugin {
             return;
         }
 
-        boolean launched = launchApkInstaller(getContext(), file);
-        if (launched) {
-            call.resolve();
+        int status = launchApkInstaller(getContext(), file);
+        if (status == 1) {
+            JSObject res = new JSObject();
+            res.put("success", true);
+            call.resolve(res);
+        } else if (status == 2) {
+            JSObject res = new JSObject();
+            res.put("success", false);
+            res.put("needsPermission", true);
+            call.resolve(res);
         } else {
             call.reject("Failed to launch package installer");
         }
     }
 
-    private boolean launchApkInstaller(Context context, File apkFile) {
+    // 1 = Launched installer, 2 = Prompted user for unknown sources permission, 0 = Failed
+    private int launchApkInstaller(Context context, File apkFile) {
         try {
-            // Android 8.0+ Check for unknown app install permission
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.getPackageManager().canRequestPackageInstalls()) {
                     Intent permIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
                     permIntent.setData(Uri.parse("package:" + context.getPackageName()));
                     permIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(permIntent);
-                    return true;
+                    return 2;
                 }
             }
 
@@ -301,9 +384,9 @@ public class MelodyxMediaPlugin extends Plugin {
             installIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
             context.startActivity(installIntent);
-            return true;
+            return 1;
         } catch (Exception e) {
-            return false;
+            return 0;
         }
     }
 }
