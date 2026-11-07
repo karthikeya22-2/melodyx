@@ -25,6 +25,9 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
+app.get('/logo.png', (req, res) => res.sendFile(path.join(__dirname, '../public/logo.png')));
+app.get('/assets/logo/logo.png', (req, res) => res.sendFile(path.join(__dirname, '../public/logo.png')));
 
 // Routes
 app.use('/api/auth', authRouter);
