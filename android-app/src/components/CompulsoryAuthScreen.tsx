@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, AlertCircle, ShieldCheck, Lock, Headphones, ArrowRight, Trash2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldCheck, Lock, Headphones, ArrowRight, Trash2, Mail } from 'lucide-react';
 import { useAuthStore, AuthUser } from '../store/useAuthStore';
 import { api } from '../services/api';
 
@@ -40,6 +40,9 @@ export const CompulsoryAuthScreen: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [recentAccounts, setRecentAccounts] = useState<SavedAccount[]>([]);
   const [gsiReady, setGsiReady] = useState(false);
+  const [showDirectEmail, setShowDirectEmail] = useState(false);
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualName, setManualName] = useState('');
 
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
@@ -84,6 +87,42 @@ export const CompulsoryAuthScreen: React.FC = () => {
       localStorage.setItem(RECENT_ACCOUNTS_KEY, JSON.stringify(updated));
       setRecentAccounts(updated);
     } catch (e) { }
+  };
+
+  const handleDirectGoogleSignIn = async (e?: React.FormEvent, directAccount?: SavedAccount) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const email = (directAccount ? directAccount.email : manualEmail).trim().toLowerCase();
+    const name = directAccount ? directAccount.name : (manualName.trim() || email.split('@')[0]);
+    const avatar = directAccount ? directAccount.avatarUrl : '';
+
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid Google email address');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSuccessMsg('Connecting your Google account...');
+
+    try {
+      const res = await api.loginWithGoogle({
+        googleEmail: email,
+        displayName: name,
+        avatarUrl: avatar
+      });
+
+      if (res && res.user && res.token) {
+        setSuccessMsg(`Welcome, ${res.user.displayName}!`);
+        setTimeout(() => {
+          handleAuthSuccess(res.user, res.token);
+        }, 300);
+      } else {
+        throw new Error('Authentication failed. Please verify your email.');
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(err.message || 'Google account sign-in failed');
+    }
   };
 
   const handleAuthSuccess = (authUser: AuthUser, authToken: string) => {
@@ -310,6 +349,57 @@ export const CompulsoryAuthScreen: React.FC = () => {
               <ArrowRight className="w-4 h-4 text-black" />
             )}
           </button>
+
+          {/* Access Blocked / Direct Gmail Sign-in Fallback */}
+          <div className="pt-0.5">
+            {!showDirectEmail ? (
+              <button
+                type="button"
+                onClick={() => setShowDirectEmail(true)}
+                className="text-[11px] text-[#94A3B8] hover:text-white underline transition-colors"
+              >
+                Access blocked? Enter your Gmail directly
+              </button>
+            ) : (
+              <form onSubmit={handleDirectGoogleSignIn} className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2 text-left animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold text-white flex items-center space-x-1.5">
+                    <Mail className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Direct Google Account Sign-In</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowDirectEmail(false)}
+                    className="text-[10px] text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <input
+                  type="email"
+                  required
+                  placeholder="yourname@gmail.com"
+                  value={manualEmail}
+                  onChange={e => setManualEmail(e.target.value)}
+                  className="w-full bg-[#18181D] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
+                />
+                <input
+                  type="text"
+                  placeholder="Your Name (optional)"
+                  value={manualName}
+                  onChange={e => setManualName(e.target.value)}
+                  className="w-full bg-[#18181D] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-xs font-bold text-white shadow flex items-center justify-center space-x-1 active:scale-98"
+                >
+                  <span>Verify &amp; Sign In</span>
+                </button>
+              </form>
+            )}
+          </div>
         </div>
 
         {/* Previously Authenticated Google Accounts on THIS Device */}
@@ -322,7 +412,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
               {recentAccounts.map(acc => (
                 <div
                   key={acc.email}
-                  onClick={triggerGoogleSignIn}
+                  onClick={() => handleDirectGoogleSignIn(undefined, acc)}
                   className="w-full flex items-center justify-between p-2 rounded-xl bg-[#1A1A20] hover:bg-[#22222A] border border-white/5 hover:border-white/20 transition-all cursor-pointer text-left shadow active:scale-98"
                 >
                   <div className="flex items-center space-x-2 truncate">

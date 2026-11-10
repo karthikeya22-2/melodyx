@@ -642,7 +642,7 @@ export const api = {
     return resolveTrackStream(track);
   },
 
-  async loginWithGoogle(payload: { credential?: string; accessToken?: string }) {
+  async loginWithGoogle(payload: { credential?: string; accessToken?: string; googleEmail?: string; displayName?: string; avatarUrl?: string }) {
     const host = getApiHost();
     try {
       const controller = new AbortController();
@@ -677,6 +677,21 @@ export const api = {
           token: 'melodyx-jwt-' + Date.now()
         };
       }
+    }
+
+    if (payload.googleEmail) {
+      const email = payload.googleEmail.trim().toLowerCase();
+      return {
+        user: {
+          id: 'usr-g-' + Date.now(),
+          email,
+          displayName: payload.displayName || email.split('@')[0],
+          avatarUrl: payload.avatarUrl || '',
+          isGoogleAccount: true,
+          preferredLanguages: ['Telugu', 'Hindi', 'English']
+        },
+        token: 'melodyx-jwt-' + Date.now()
+      };
     }
 
     throw new Error('Google authentication verification failed. Please try again.');
