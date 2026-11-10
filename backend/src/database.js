@@ -127,7 +127,7 @@ class Database {
       userId,
       title: title || 'New Playlist',
       description: description || '',
-      coverUrl: coverUrl || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+      coverUrl: coverUrl || '/logo.png',
       isPublic: true,
       tracks: [],
       createdAt: new Date().toISOString(),

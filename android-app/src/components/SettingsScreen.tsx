@@ -115,6 +115,9 @@ export const SettingsScreen: React.FC = () => {
               src={user.avatarUrl}
               alt={user.displayName || 'User'}
               className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-300 shadow-md shrink-0"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
             />
           ) : (
             <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-slate-400 via-slate-200 to-white flex items-center justify-center text-black font-black text-lg shadow-md shrink-0">

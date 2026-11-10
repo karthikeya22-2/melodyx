@@ -27,9 +27,12 @@ export const MiniPlayer: React.FC = () => {
       {/* Track Info */}
       <div className="flex items-center space-x-3 truncate flex-1 pr-2">
         <img
-          src={currentTrack.artwork}
+          src={currentTrack.artwork || '/logo.png'}
           alt={currentTrack.title}
           className="w-10 h-10 rounded-lg object-cover shadow-md shrink-0 ring-1 ring-white/10"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/logo.png';
+          }}
         />
         <div className="truncate">
           <p className="text-xs font-bold text-white truncate">{currentTrack.title}</p>

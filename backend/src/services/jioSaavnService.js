@@ -18,11 +18,12 @@ class JioSaavnService {
         DES_KEY,
         { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }
       );
-      const rawUrl = decrypted.toString(CryptoJS.enc.Utf8);
+      let rawUrl = decrypted.toString(CryptoJS.enc.Utf8);
       if (!rawUrl || !rawUrl.startsWith('http')) return null;
 
-      // Upgrade quality to 320 kbps MP4/M4A if available, or 160 kbps
-      return rawUrl.replace(/_96\.mp4|_160\.mp4/, '_320.mp4');
+      rawUrl = rawUrl.replace('http://', 'https://');
+      // Upgrade stream to highest available studio quality: 320 kbps MP4/M4A
+      return rawUrl.replace(/_(?:48|96|160)\.(mp4|m4a)$/, '_320.$1').replace(/_(?:48|96|160)\./, '_320.');
     } catch (err) {
       console.warn('[JIOSAAVN] Decryption note:', err.message);
       return null;
@@ -35,7 +36,7 @@ class JioSaavnService {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
 
       const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&q=${encodeURIComponent(query.trim())}&p=1&n=${limit}`;
       const response = await fetch(url, {
@@ -85,7 +86,7 @@ class JioSaavnService {
             .replace(/&#039;/g, "'")
             .trim(),
           duration: parseInt(item.duration, 10) || 210,
-          artwork: highResArt || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+          artwork: highResArt || '/logo.png',
           audioUrl: `/api/stream/play/saavn-${item.id}`,
           directStreamUrl: directAudio,
           language: item.language || 'Indian',

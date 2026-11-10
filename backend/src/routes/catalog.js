@@ -10,11 +10,27 @@ router.get('/home', optionalAuth, (req, res) => {
   res.json(feed);
 });
 
-// Search
+// Search with Pagination & Deduplication
 router.get('/search', async (req, res) => {
   const q = req.query.q || '';
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.max(1, Math.min(50, parseInt(req.query.limit, 10) || 20));
+
   const results = await catalog.search(q);
-  res.json(results);
+  const totalTracks = results.tracks ? results.tracks.length : 0;
+  const startIndex = (page - 1) * limit;
+  const paginatedTracks = results.tracks ? results.tracks.slice(startIndex, startIndex + limit) : [];
+
+  res.json({
+    ...results,
+    tracks: paginatedTracks,
+    pagination: {
+      page,
+      limit,
+      total: totalTracks,
+      totalPages: Math.ceil(totalTracks / limit)
+    }
+  });
 });
 
 // Track Details

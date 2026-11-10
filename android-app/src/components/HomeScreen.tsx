@@ -8,11 +8,28 @@ import { recommendationEngine } from '../services/recommendationEngine';
 import { GoogleAuthModal } from './GoogleAuthModal';
 import { AppLoadingScreen } from './AppLoadingScreen';
 
+function getLocalGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 22) return 'Good evening';
+  return 'Good evening';
+}
+
 export const HomeScreen: React.FC = () => {
   const { playTrack, currentTrack, isPlaying, togglePlay, setCurrentTab, likedTrackIds } = useMobilePlayerStore();
   const { user, isAuthenticated } = useAuthStore();
   const [feed, setFeed] = useState<any>(() => api.getInitialHomeFeed());
+  const [greeting, setGreeting] = useState<string>(getLocalGreeting);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'telugu' | 'hindi' | 'english'>('all');
+
+  useEffect(() => {
+    setGreeting(getLocalGreeting());
+    const interval = setInterval(() => {
+      setGreeting(getLocalGreeting());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     api.getHomeFeed().then(data => {
@@ -96,10 +113,13 @@ export const HomeScreen: React.FC = () => {
             >
               <div className="aspect-square w-full rounded-xl overflow-hidden mb-2 relative bg-[#141418] border border-white/5 shadow-lg">
                 <img
-                  src={track.artwork}
+                  src={track.artwork || '/logo.png'}
                   alt={track.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.png';
+                  }}
                 />
                 {isThisPlaying && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -136,6 +156,9 @@ export const HomeScreen: React.FC = () => {
                 src={user.avatarUrl}
                 alt={user.displayName}
                 className="w-9 h-9 rounded-full object-cover border border-white/20 shadow-lg"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-600 flex items-center justify-center text-xs font-bold text-black shadow-lg">
@@ -144,8 +167,8 @@ export const HomeScreen: React.FC = () => {
             )}
             <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent drop-shadow-sm">
               {user?.displayName
-                ? `${feed.greeting}, ${user.displayName.split(' ')[0]}!`
-                : `${feed.greeting}!`}
+                ? `${greeting}, ${user.displayName.trim().split(' ')[0]}!`
+                : `${greeting}!`}
             </h1>
           </div>
 

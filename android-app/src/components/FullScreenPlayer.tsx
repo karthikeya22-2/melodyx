@@ -116,9 +116,12 @@ export const FullScreenPlayer: React.FC = () => {
         ) : (
           <div className="aspect-square w-full max-w-[320px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[#131316] border border-white/10 relative">
             <img
-              src={currentTrack.artwork}
+              src={currentTrack.artwork || '/logo.png'}
               alt={currentTrack.title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo.png';
+              }}
             />
           </div>
         )}

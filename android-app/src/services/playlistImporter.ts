@@ -82,7 +82,7 @@ export class UniversalPlaylistImporter {
           id: `imported_sp_${playlistId}`,
           title,
           description: ogDesc || 'Imported from Spotify',
-          coverUrl: ogImage || tracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+          coverUrl: ogImage || tracks[0]?.artwork || '/logo.png',
           source: 'spotify',
           sourceUrl: url,
           trackCount: tracks.length,
@@ -99,7 +99,7 @@ export class UniversalPlaylistImporter {
       entity.visualIdentity?.image?.[1]?.url ||
       entity.visualIdentity?.image?.[2]?.url ||
       entity.coverArt?.sources?.[0]?.url ||
-      'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg';
+      '/logo.png';
 
     const rawTracks = entity.trackList || [];
     if (!rawTracks.length) {
@@ -107,12 +107,21 @@ export class UniversalPlaylistImporter {
     }
 
     const tracks: Track[] = [];
+    const seenTrackKeys = new Set<string>();
 
     // Process all tracks and pre-resolve first 5 for immediate instantaneous streaming
     for (let idx = 0; idx < rawTracks.length; idx++) {
       const t = rawTracks[idx];
       const cleanTitle = (t.title || 'Track').replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[\u00A0\s]+/g, ' ').trim();
       const cleanArtist = (t.subtitle || 'Artist').replace(/[\u00A0\s]+/g, ' ').trim();
+      const dedupKey = `${cleanTitle.toLowerCase()}|${cleanArtist.toLowerCase()}`;
+
+      // Prevent accidental duplicate track entries while preserving playlist order
+      if (seenTrackKeys.has(dedupKey)) {
+        continue;
+      }
+      seenTrackKeys.add(dedupKey);
+
       const spotifyTrackId = t.uri ? t.uri.replace('spotify:track:', '') : `sp_${idx}_${Date.now()}`;
       const durationSec = Math.round((t.duration || 210000) / 1000);
 
@@ -218,14 +227,18 @@ export class UniversalPlaylistImporter {
       .trim();
     const coverUrl =
       (data.image || '').replace('150x150', '500x500') ||
-      'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg';
+      '/logo.png';
 
     const rawSongs = data.songs || data.list || [];
     if (!rawSongs.length) {
       throw new Error('No songs found in this JioSaavn playlist.');
     }
 
-    const tracks: Track[] = rawSongs.map((s: any, idx: number) => {
+    const seenSaavnKeys = new Set<string>();
+    const tracks: Track[] = [];
+
+    for (let idx = 0; idx < rawSongs.length; idx++) {
+      const s = rawSongs[idx];
       const cleanTitle = (s.song || s.title || 'Track')
         .replace(/&quot;/g, '"')
         .replace(/&#039;/g, "'")
@@ -234,11 +247,16 @@ export class UniversalPlaylistImporter {
         .replace(/&quot;/g, '"')
         .replace(/&#039;/g, "'")
         .trim();
+
+      const dedupKey = `${cleanTitle.toLowerCase()}|${cleanArtist.toLowerCase()}`;
+      if (seenSaavnKeys.has(dedupKey)) continue;
+      seenSaavnKeys.add(dedupKey);
+
       const songArtwork = (s.image || coverUrl).replace('150x150', '500x500');
       const directUrl = s.encrypted_media_url ? decryptSaavnMediaUrl(s.encrypted_media_url) : null;
       const trackId = `js_${s.id || idx}`;
 
-      return {
+      tracks.push({
         id: trackId,
         title: cleanTitle,
         artist: cleanArtist,
@@ -248,8 +266,8 @@ export class UniversalPlaylistImporter {
         directStreamUrl: directUrl || '',
         audioUrl: directUrl || '',
         isPreview: false
-      };
-    });
+      });
+    }
 
     return {
       id: `imported_js_${data.id || token || Date.now()}`,
@@ -361,7 +379,7 @@ export class UniversalPlaylistImporter {
       id: `imported_custom_${Date.now()}`,
       title: playlistTitle,
       description: `Collection of ${tracks.length} songs`,
-      coverUrl: tracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+      coverUrl: tracks[0]?.artwork || '/logo.png',
       source: 'custom',
       sourceUrl: '',
       trackCount: tracks.length,
@@ -385,7 +403,7 @@ export class UniversalPlaylistImporter {
       .replace(/&#039;/g, "'")
       .replace(/\|.*$/, '')
       .trim();
-    const coverUrl = ogImage?.[1] || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg';
+    const coverUrl = ogImage?.[1] || '/logo.png';
 
     const searchRes = await api.search(title.slice(0, 30));
     const tracks = (searchRes.tracks && searchRes.tracks.length > 0) ? searchRes.tracks.slice(0, 10) : [];

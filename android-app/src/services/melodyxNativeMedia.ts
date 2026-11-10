@@ -44,7 +44,7 @@ export const MelodyxMedia = registerPlugin<MelodyxMediaPluginInterface>('Melodyx
     updatePlaybackState: async () => {},
     stopService: async () => {},
     requestNotificationPermission: async () => ({ granted: true }),
-    getAppVersion: async () => ({ versionName: '2.1.0', versionCode: 2, packageName: 'com.spotube.soundwave' }),
+    getAppVersion: async () => ({ versionName: '2.2.0', versionCode: 3, packageName: 'com.spotube.soundwave' }),
     downloadAndInstallApk: async () => ({ success: false, filePath: '' }),
     installApk: async () => {},
     addListener: async () => ({ remove: async () => {} })

@@ -347,8 +347,16 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
       });
 
       let streamSrc = (track as any).directStreamUrl || track.audioUrl || '';
-      if (!streamSrc || streamSrc.includes('soundhelix.com') || streamSrc.startsWith('/')) {
-        // Asynchronously resolve direct 320kbps Akamai CDN stream
+      const host = getApiHost();
+
+      if (streamSrc.startsWith('/')) {
+        streamSrc = `${host}${streamSrc}`;
+      } else if (streamSrc.startsWith('http://localhost:5000')) {
+        streamSrc = streamSrc.replace('http://localhost:5000', host);
+      }
+
+      if (!streamSrc || streamSrc.includes('soundhelix.com')) {
+        // Asynchronously resolve direct 320kbps Akamai CDN stream for this specific track
         api.resolveTrackStream(track).then(resolved => {
           if (resolved) {
             (track as any).directStreamUrl = resolved;
@@ -358,18 +366,22 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
               audioElement.src = resolved;
               audioElement.play().catch(console.warn);
             }
+          } else {
+            const cur = get().currentTrack;
+            if (cur && cur.id === track.id) {
+              set({ isBuffering: false, isPlaying: false, playbackError: 'Audio stream currently unavailable.' });
+            }
           }
-        }).catch(console.warn);
-
-        const host = getApiHost();
-        streamSrc = streamSrc ? `${host}${streamSrc}` : `https://aac.saavncdn.com/683/000ab54759049a8451ffcdc6412a0ef6_320.mp4`;
-      } else if (streamSrc.startsWith('http://localhost:5000')) {
-        const host = getApiHost();
-        streamSrc = streamSrc.replace('http://localhost:5000', host);
+        }).catch(() => {
+          const cur = get().currentTrack;
+          if (cur && cur.id === track.id) {
+            set({ isBuffering: false, isPlaying: false, playbackError: 'Audio stream currently unavailable.' });
+          }
+        });
+      } else {
+        audioElement.src = streamSrc;
+        audioElement.play().catch(console.warn);
       }
-
-      audioElement.src = streamSrc;
-      audioElement.play().catch(console.warn);
 
       updateMediaSession(
         track,
@@ -469,7 +481,7 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
             id: 'liked-songs',
             title: 'Liked Songs',
             description: 'Your favorite tracks',
-            coverUrl: likedTracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+            coverUrl: likedTracks[0]?.artwork || '/logo.png',
             trackCount: likedTracks.length,
             tracks: likedTracks
           };
@@ -491,7 +503,7 @@ export const useMobilePlayerStore = create<MobilePlayerStore>((set, get) => {
             id: 'recently-played',
             title: 'Recently Played',
             description: 'Songs you listened to recently',
-            coverUrl: history[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+            coverUrl: history[0]?.artwork || '/logo.png',
             trackCount: history.length,
             tracks: history
           };

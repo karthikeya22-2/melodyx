@@ -265,9 +265,12 @@ export const SearchScreen: React.FC = () => {
                     <div className="flex items-center space-x-3 truncate">
                       <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#1A1A20] ring-1 ring-white/10">
                         <img
-                          src={track.artwork}
+                          src={track.artwork || '/logo.png'}
                           alt={track.title}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/logo.png';
+                          }}
                         />
                         {isThisPlaying && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">

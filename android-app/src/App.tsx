@@ -18,9 +18,20 @@ import { MelodyxMedia } from './services/melodyxNativeMedia';
 
 export const App: React.FC = () => {
   const { currentTab, setCurrentTab, isFullScreenOpen, setFullScreenOpen, isOptionsMenuOpen, closeOptionsMenu, selectedPlaylist, setSelectedPlaylist } = useMobilePlayerStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, token, updateUser } = useAuthStore();
   const [isIntroLoading, setIsIntroLoading] = useState(true);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+
+  // Synchronize and refresh authenticated Google profile across app launches
+  useEffect(() => {
+    if (token) {
+      api.getCurrentUser(token).then(refreshedUser => {
+        if (refreshedUser && refreshedUser.email) {
+          updateUser(refreshedUser);
+        }
+      }).catch(() => {});
+    }
+  }, [token]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsIntroLoading(false), 1100);

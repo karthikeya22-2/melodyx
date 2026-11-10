@@ -563,6 +563,7 @@ function filterAndRankResults(tracks, query, maxResults = 3) {
 // In-memory high speed search cache for instant sub-millisecond retrieval
 const searchCache = new Map();
 const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const inFlightSearches = new Map();
 
 class CatalogService {
   getHomeFeed() {
@@ -634,7 +635,13 @@ class CatalogService {
       return cached.data;
     }
 
-    // 2. Search local curated catalog immediately
+    // 2. In-flight Promise sharing: prevent duplicate upstream calls for concurrent identical requests
+    if (inFlightSearches.has(q)) {
+      return inFlightSearches.get(q);
+    }
+
+    const searchExecution = (async () => {
+      try {
     const matchedCuratedTracks = allTracks.filter(
       t =>
         t.title.toLowerCase().includes(q) ||
@@ -699,7 +706,7 @@ class CatalogService {
               artist: artist,
               album: 'Single',
               duration: v.seconds || 210,
-              artwork: v.thumbnail || v.image || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+              artwork: v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '/logo.png'),
               audioUrl: `/api/stream/play/yt-${v.videoId}`,
               genre: 'Music',
               language: 'Universal',
@@ -747,15 +754,22 @@ class CatalogService {
       playlists: matchedPlaylists.slice(0, 2)
     };
 
-    // Store in cache for blazing fast repeated or sequential keystroke queries
-    if (searchCache.size > 200) {
-      const firstKey = searchCache.keys().next().value;
-      searchCache.delete(firstKey);
-    }
-    searchCache.set(q, { timestamp: Date.now(), data: result });
+      // Store in cache for blazing fast repeated or sequential keystroke queries
+      if (searchCache.size > 200) {
+        const firstKey = searchCache.keys().next().value;
+        searchCache.delete(firstKey);
+      }
+      searchCache.set(q, { timestamp: Date.now(), data: result });
 
-    return result;
-  }
+      return result;
+    } finally {
+      inFlightSearches.delete(q);
+    }
+  })();
+
+  inFlightSearches.set(q, searchExecution);
+  return searchExecution;
+}
 }
 
 module.exports = new CatalogService();

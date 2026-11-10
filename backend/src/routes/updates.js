@@ -3,22 +3,25 @@ const router = express.Router();
 
 // Melody X Production Remote Release Configuration
 const LATEST_RELEASE = {
-  latestVersion: '2.1.0',
-  latestVersionCode: 2,
-  version: '2.1.0', // backwards compatibility
-  versionCode: 2,
+  latestVersion: '2.2.0',
+  latestVersionCode: 3,
+  version: '2.2.0', // backwards compatibility
+  versionCode: 3,
   releaseDate: 'November 2026',
   minimumSupportedVersion: '1.0.0',
   minimumSupportedVersionCode: 1,
   minSupportedVersion: '1.0.0', // backwards compatibility
-  title: 'Melody X Notification & Lock-Screen Update',
-  releaseNotes: "What's New in Melody X:\n- Fixed missing music notification.\n- Added lock-screen music controls.\n- Improved background playback.\n- Improved notification synchronization.\n- General stability improvements.",
+  title: 'Melody X 2nd Major Update (v2.2.0)',
+  releaseNotes: "What's New in Melody X v2.2.0:\n- Fixed Google Sign-In & verified profile synchronization.\n- Added Add to Playlist (select existing & create new inline).\n- Highest clarity 320kbps audio streaming.\n- Song-specific posters and artwork.\n- Device local time greetings with user name.\n- Resilient playlist import from Spotify, JioSaavn & YouTube.\n- Optimized backend caching and rate limiting.\n- Preserved background music playback.",
   changelog: [
-    'Fixed missing music notification',
-    'Added lock-screen music controls',
-    'Improved background playback',
-    'Improved notification synchronization',
-    'General stability improvements'
+    'Fixed Google Sign-In & verified profile synchronization',
+    'Fixed Add to Playlist with library playlists and inline creation',
+    'Optimized audio clarity with studio 320kbps streams',
+    'Fixed song-specific posters and eliminated duplicate artwork',
+    'Dynamic client device time greetings with user name',
+    'Improved Spotify, JioSaavn & YouTube playlist imports',
+    'Optimized backend with in-flight deduplication and caching',
+    'Preserved foreground service background music playback'
   ],
   apkDownloadUrl: '/download/apk',
   downloadUrl: '/download/apk',

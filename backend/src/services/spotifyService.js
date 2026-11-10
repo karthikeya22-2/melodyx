@@ -85,7 +85,7 @@ class SpotifyService {
           artist: t.artists.map(a => a.name).join(', '),
           album: t.album?.name || 'Single',
           duration: Math.round((t.duration_ms || 210000) / 1000),
-          artwork: t.album?.images?.[0]?.url || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+          artwork: t.album?.images?.[0]?.url || '/logo.png',
           audioUrl: `/api/stream/play/sp-${t.id}`,
           genre: 'Spotify Official',
           language: 'Universal',

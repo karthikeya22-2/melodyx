@@ -24,6 +24,56 @@ app.use(
   })
 );
 
+// 1. Request Timeout Middleware (15s limit to avoid hanging connections)
+app.use((req, res, next) => {
+  res.setTimeout(15000, () => {
+    if (!res.headersSent) {
+      res.status(504).json({ error: 'Request timeout: upstream operation took too long.' });
+    }
+  });
+  next();
+});
+
+// 2. High-Performance Rate Limiting (150 req/min per IP, audio streams exempt)
+const rateLimitWindow = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitWindow.entries()) {
+    if (now > entry.resetAt) rateLimitWindow.delete(ip);
+  }
+}, 60000);
+
+app.use((req, res, next) => {
+  // Never throttle audio playback streaming or APK downloads
+  if (
+    req.path.startsWith('/api/stream') ||
+    req.path.startsWith('/download') ||
+    req.path.startsWith('/apk') ||
+    req.path.startsWith('/logo.png')
+  ) {
+    return next();
+  }
+
+  const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const ip = String(rawIp).split(',')[0].trim();
+  const now = Date.now();
+
+  const record = rateLimitWindow.get(ip) || { count: 0, resetAt: now + 60000 };
+  if (now > record.resetAt) {
+    record.count = 1;
+    record.resetAt = now + 60000;
+  } else {
+    record.count++;
+  }
+  rateLimitWindow.set(ip, record);
+
+  if (record.count > 150) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a moment before trying again.' });
+  }
+
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 app.get('/logo.png', (req, res) => res.sendFile(path.join(__dirname, '../public/logo.png')));
@@ -43,13 +93,16 @@ const apkDir = path.join(__dirname, '../apk');
 if (!fs.existsSync(apkDir)) fs.mkdirSync(apkDir, { recursive: true });
 
 function sendApkDownload(res) {
+  const v220Apk = path.join(apkDir, 'Melodyx-v2.2.0.apk');
   const v210Apk = path.join(apkDir, 'Melodyx-v2.1.0.apk');
   const customApk = path.join(apkDir, 'Melodyx.apk');
   const gradleDebugApk = path.join(__dirname, '../../android-app/android/app/build/outputs/apk/debug/app-debug.apk');
   const gradleReleaseApk = path.join(__dirname, '../../android-app/android/app/build/outputs/apk/release/app-release.apk');
   const gradleUnsignedApk = path.join(__dirname, '../../android-app/android/app/build/outputs/apk/release/app-release-unsigned.apk');
 
-  if (fs.existsSync(v210Apk)) {
+  if (fs.existsSync(v220Apk)) {
+    return res.download(v220Apk, 'Melodyx-v2.2.0.apk');
+  } else if (fs.existsSync(v210Apk)) {
     return res.download(v210Apk, 'Melodyx-v2.1.0.apk');
   } else if (fs.existsSync(customApk)) {
     return res.download(customApk, 'Melodyx.apk');
@@ -179,19 +232,22 @@ app.get('/', (req, res) => {
     <div class="logo-badge">🎵</div>
     <h1>Melody X</h1>
     <p class="tagline">Premium Music Streaming Experience</p>
-    <div class="badge">Version 2.1.0 • Latest Release</div>
+    <div class="badge">Version 2.2.0 • Latest Major Release</div>
 
     <a href="/download/apk" class="btn">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-      Download Melody X APK
+      Download Melody X APK (v2.2.0)
     </a>
 
     <div class="features">
-      <h3>What's New in v2.1.0</h3>
-      <div class="feature-item"><span>✓</span> Notification shade music controls</div>
-      <div class="feature-item"><span>✓</span> Lock-screen media player with artwork</div>
-      <div class="feature-item"><span>✓</span> Background playback stability</div>
-      <div class="feature-item"><span>✓</span> Automatic in-app update installer</div>
+      <h3>What's New in v2.2.0</h3>
+      <div class="feature-item"><span>✓</span> Verified Google Sign-In & profile sync</div>
+      <div class="feature-item"><span>✓</span> Add to Playlist (select & create inline)</div>
+      <div class="feature-item"><span>✓</span> 320kbps high-fidelity audio streams</div>
+      <div class="feature-item"><span>✓</span> Song-specific album artwork & posters</div>
+      <div class="feature-item"><span>✓</span> Real-time device local time greetings</div>
+      <div class="feature-item"><span>✓</span> Resilient universal playlist import</div>
+      <div class="feature-item"><span>✓</span> Preserved foreground background playback</div>
     </div>
   </div>
 </body>

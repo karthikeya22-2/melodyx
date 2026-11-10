@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, CheckCircle2, AlertCircle, Mail, User, ShieldCheck, Lock, Headphones, ArrowRight, Trash2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldCheck, Lock, Headphones, ArrowRight, Trash2 } from 'lucide-react';
 import { useAuthStore, AuthUser } from '../store/useAuthStore';
 import { api } from '../services/api';
 
@@ -13,6 +13,11 @@ declare global {
           prompt: (momentListener?: (notification: any) => void) => void;
           cancel: () => void;
         };
+        oauth2: {
+          initTokenClient: (config: any) => {
+            requestAccessToken: () => void;
+          };
+        };
       };
     };
   }
@@ -25,20 +30,20 @@ interface SavedAccount {
   lastUsed: number;
 }
 
+const GOOGLE_CLIENT_ID = '631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com';
 const RECENT_ACCOUNTS_KEY = 'melodyx_recent_google_accounts';
 
 export const CompulsoryAuthScreen: React.FC = () => {
   const { login } = useAuthStore();
-  const [googleEmail, setGoogleEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [recentAccounts, setRecentAccounts] = useState<SavedAccount[]>([]);
+  const [gsiReady, setGsiReady] = useState(false);
 
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
-  // Load ONLY user's genuine saved accounts from localStorage on this device
+  // Load genuine saved accounts from localStorage on this device
   useEffect(() => {
     try {
       const saved = localStorage.getItem(RECENT_ACCOUNTS_KEY);
@@ -61,7 +66,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
       list.unshift({
         email: user.email,
         name: user.displayName,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: user.avatarUrl || '',
         lastUsed: Date.now()
       });
       list = list.slice(0, 4);
@@ -81,97 +86,137 @@ export const CompulsoryAuthScreen: React.FC = () => {
     } catch (e) { }
   };
 
-  // Safe login that always succeeds and lets the user into the app
-  const performGoogleLogin = async (targetEmail?: string, targetName?: string, targetAvatar?: string) => {
-    const rawEmail = (targetEmail || googleEmail).trim();
+  const handleAuthSuccess = (authUser: AuthUser, authToken: string) => {
+    saveAccountToRecent(authUser);
+    login(authUser, authToken);
+    setIsLoading(false);
+  };
 
-    if (!rawEmail) {
-      setError('Please enter your personal Google email address to continue.');
+  // Process ID Token or OAuth Token from Google Identity Services
+  const handleGoogleCredentialResponse = async (response: any) => {
+    if (!response || (!response.credential && !response.access_token)) {
+      setError('Google Sign-In response was empty. Please try again.');
+      setIsLoading(false);
       return;
     }
 
-    // Auto-complete @gmail.com if user only entered their username
-    const trimmedEmail = rawEmail.includes('@') ? rawEmail.toLowerCase() : `${rawEmail.toLowerCase()}@gmail.com`;
-    const resolvedName = (targetName || displayName || trimmedEmail.split('@')[0] || 'Melodyx User').trim();
-    const resolvedAvatar = targetAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(resolvedName)}`;
-
     setIsLoading(true);
     setError(null);
-    setSuccessMsg(`Welcome, ${resolvedName}! Signing in...`);
+    setSuccessMsg('Verifying your Google account...');
 
-    const localUser: AuthUser = {
-      id: 'usr-g-' + Date.now(),
-      email: trimmedEmail,
-      displayName: resolvedName,
-      avatarUrl: resolvedAvatar,
-      isGoogleAccount: true,
-      preferredLanguages: ['Telugu', 'Hindi', 'English']
-    };
-    const localToken = 'melodyx-jwt-' + Date.now();
+    try {
+      const res = await api.loginWithGoogle({
+        credential: response.credential,
+        accessToken: response.access_token
+      });
 
-    // Background server sync (non-blocking so slow network or Render cold-start never locks user out)
-    api.loginWithGoogle({
-      googleUser: {
-        email: trimmedEmail,
-        name: resolvedName,
-        displayName: resolvedName,
-        picture: resolvedAvatar,
-        sub: 'g-user-' + Math.abs(trimmedEmail.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0))
+      if (res && res.user && res.token) {
+        setSuccessMsg(`Welcome, ${res.user.displayName}!`);
+        setTimeout(() => {
+          handleAuthSuccess(res.user, res.token);
+        }, 300);
+      } else {
+        throw new Error('Authentication succeeded but user profile was not returned.');
       }
-    }).then(res => {
-      if (res?.user && res?.token) {
-        saveAccountToRecent(res.user);
-        login(res.user, res.token);
-      }
-    }).catch(err => {
-      console.warn('Server sync will retry later:', err);
-    });
-
-    // Enter the app immediately with the verified local session
-    setTimeout(() => {
-      saveAccountToRecent(localUser);
-      login(localUser, localToken);
+    } catch (err: any) {
+      console.error('Google Sign-In error:', err);
       setIsLoading(false);
-    }, 250);
+      setError(err.message || 'Google verification failed. Please try again.');
+    }
   };
 
-  // Optional official Google Identity Services mounting (if supported on device)
-  useEffect(() => {
-    if (window.google?.accounts?.id && googleBtnRef.current) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: '631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com',
-          callback: async (response: any) => {
-            if (response?.credential) {
-              try {
-                const res = await api.loginWithGoogle({ credential: response.credential });
-                saveAccountToRecent(res.user);
-                login(res.user, res.token);
-              } catch (e) {
-                if (googleEmail) {
-                  performGoogleLogin(googleEmail, displayName);
-                }
-              }
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: false
-        });
+  // Launch Google Sign-In on demand
+  const triggerGoogleSignIn = () => {
+    setError(null);
+    setIsLoading(true);
 
-        googleBtnRef.current.innerHTML = '';
-        window.google.accounts.id.renderButton(googleBtnRef.current, {
-          theme: 'filled_black',
-          size: 'large',
-          shape: 'pill',
-          text: 'continue_with',
-          logo_alignment: 'left',
-          width: Math.min(290, window.innerWidth - 64)
+    if (window.google?.accounts?.oauth2) {
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: (tokenResp: any) => {
+            if (tokenResp.error) {
+              setIsLoading(false);
+              if (tokenResp.error !== 'popup_closed_by_user') {
+                setError(`Google Sign-In notice: ${tokenResp.error}`);
+              }
+              return;
+            }
+            handleGoogleCredentialResponse(tokenResp);
+          }
         });
-      } catch (err) {
-        console.warn('GSI init notice:', err);
+        tokenClient.requestAccessToken();
+        return;
+      } catch (err: any) {
+        console.warn('oauth2 token client failed:', err);
       }
     }
-  }, [login, googleEmail, displayName]);
+
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setIsLoading(false);
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn('accounts.id.prompt error:', err);
+      }
+    }
+
+    setIsLoading(false);
+    setError('Google Sign-In service is loading. Please tap the Google button below.');
+  };
+
+  // Mount Google Identity Services Button
+  useEffect(() => {
+    let checkInterval: any = null;
+    let attempts = 0;
+
+    const initGsi = () => {
+      if (window.google?.accounts?.id && googleBtnRef.current) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
+
+          googleBtnRef.current.innerHTML = '';
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: 'filled_black',
+            size: 'large',
+            shape: 'pill',
+            text: 'continue_with',
+            logo_alignment: 'left',
+            width: Math.min(320, window.innerWidth - 64)
+          });
+
+          setGsiReady(true);
+          return true;
+        } catch (err) {
+          console.warn('GSI render error:', err);
+        }
+      }
+      return false;
+    };
+
+    if (!initGsi()) {
+      checkInterval = setInterval(() => {
+        attempts++;
+        if (initGsi() || attempts > 20) {
+          clearInterval(checkInterval);
+        }
+      }, 200);
+    }
+
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0A0C] overflow-y-auto select-none">
@@ -207,7 +252,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
 
         {/* Informational subtitle */}
         <p className="text-[11px] text-[#A0AEC0] leading-relaxed">
-          Enter your personal Google email to start streaming ad-free music with high-fidelity lossless audio.
+          Sign in securely with your Google account to stream high-fidelity studio music, create playlists, and sync your music library across devices.
         </p>
 
         {error && (
@@ -224,55 +269,17 @@ export const CompulsoryAuthScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Form Inputs: Personal Google Account Entry */}
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            performGoogleLogin();
-          }}
-          className="space-y-3 text-left pt-1"
-        >
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-[#CBD5E1]">
-              Personal Google Email <span className="text-red-400">*</span>
-            </label>
-            <div className="relative flex items-center">
-              <Mail className="absolute left-3 w-4 h-4 text-[#777]" />
-              <input
-                type="email"
-                value={googleEmail}
-                onChange={e => {
-                  setGoogleEmail(e.target.value);
-                  if (error) setError(null);
-                }}
-                placeholder="your.name@gmail.com"
-                required
-                className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/60 focus:outline-none rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#666] shadow-inner"
-              />
-            </div>
-          </div>
+        {/* PRIMARY ACTION: Sign In with Google Button */}
+        <div className="space-y-3 pt-2">
+          {/* Rendered official Google button if GSI initialized */}
+          <div ref={googleBtnRef} className="flex justify-center min-h-[44px]" />
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-[#CBD5E1]">
-              Your Name (Optional)
-            </label>
-            <div className="relative flex items-center">
-              <User className="absolute left-3 w-4 h-4 text-[#777]" />
-              <input
-                type="text"
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                placeholder="Your Name"
-                className="w-full bg-[#0A0A0C] border border-[#2A2A30] focus:border-white/60 focus:outline-none rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#666] shadow-inner"
-              />
-            </div>
-          </div>
-
-          {/* PRIMARY BUTTON: Continue with Google */}
+          {/* High-visibility direct trigger button */}
           <button
-            type="submit"
+            type="button"
+            onClick={triggerGoogleSignIn}
             disabled={isLoading}
-            className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:brightness-105 active:scale-98 text-black font-extrabold text-xs shadow-xl shadow-white/10 flex items-center justify-between transition-all"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:brightness-105 active:scale-98 text-black font-extrabold text-xs shadow-xl shadow-white/10 flex items-center justify-between transition-all"
           >
             <div className="flex items-center space-x-2.5">
               <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
@@ -295,7 +302,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
                   />
                 </svg>
               </div>
-              <span className="font-bold text-xs tracking-tight">Continue to Melodyx</span>
+              <span className="font-bold text-xs tracking-tight">Continue with Google</span>
             </div>
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -303,37 +310,45 @@ export const CompulsoryAuthScreen: React.FC = () => {
               <ArrowRight className="w-4 h-4 text-black" />
             )}
           </button>
-        </form>
+        </div>
 
-        {/* Saved Accounts on THIS Device Only (if any exist) */}
+        {/* Previously Authenticated Google Accounts on THIS Device */}
         {recentAccounts.length > 0 && (
           <div className="space-y-1.5 pt-2 text-left border-t border-white/10">
             <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wider text-center">
-              Or Choose Previous Account:
+              Or Reconnect Account:
             </p>
             <div className="space-y-1.5">
               {recentAccounts.map(acc => (
                 <div
                   key={acc.email}
-                  onClick={() => performGoogleLogin(acc.email, acc.name, acc.avatarUrl)}
+                  onClick={triggerGoogleSignIn}
                   className="w-full flex items-center justify-between p-2 rounded-xl bg-[#1A1A20] hover:bg-[#22222A] border border-white/5 hover:border-white/20 transition-all cursor-pointer text-left shadow active:scale-98"
                 >
                   <div className="flex items-center space-x-2 truncate">
                     {acc.avatarUrl ? (
-                      <img src={acc.avatarUrl} alt={acc.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                      <img
+                        src={acc.avatarUrl}
+                        alt={acc.name}
+                        className="w-6 h-6 rounded-full object-cover shrink-0"
+                        onError={(e) => {
+                          // Gracefully handle expired Google photo URLs
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
                         {acc.name ? acc.name.charAt(0).toUpperCase() : 'G'}
                       </div>
                     )}
                     <div className="truncate">
-                      <p className="text-[11px] font-bold text-white truncate">{acc.name || 'Google User'}</p>
+                      <p className="text-[11px] font-bold text-white truncate">{acc.name || 'Google Account'}</p>
                       <p className="text-[9px] text-[#888] truncate">{acc.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1 shrink-0">
                     <span className="text-[9px] font-bold text-slate-300 px-2 py-0.5 bg-white/5 rounded-full">
-                      Sign In
+                      Switch
                     </span>
                     <button
                       type="button"
@@ -350,9 +365,6 @@ export const CompulsoryAuthScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Hidden GSI Container if device supports it */}
-        <div ref={googleBtnRef} className="hidden" />
-
         {/* Trust Badges */}
         <div className="pt-2 border-t border-white/10 flex items-center justify-center space-x-3 text-[9px] text-[#64748B]">
           <span className="flex items-center space-x-1">
@@ -362,7 +374,7 @@ export const CompulsoryAuthScreen: React.FC = () => {
           <span>•</span>
           <span className="flex items-center space-x-1">
             <Headphones className="w-3 h-3 text-slate-400" />
-            <span>320kbps Lossless</span>
+            <span>320kbps Audio</span>
           </span>
           <span>•</span>
           <span>Ad-Free</span>

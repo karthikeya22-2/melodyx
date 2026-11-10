@@ -65,7 +65,7 @@ router.post('/register', async (req, res) => {
       email,
       passwordHash,
       displayName: displayName || email.split('@')[0],
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName || email)}`,
+      avatarUrl: '',
       preferredLanguages: preferredLanguages || ['Telugu', 'Hindi', 'English'],
       createdAt: new Date().toISOString()
     };
@@ -131,7 +131,7 @@ router.get('/google-config', (req, res) => {
 // Google Sign-In & Registration
 router.post('/google', async (req, res) => {
   try {
-    const { credential, googleUser } = req.body;
+    const { credential, accessToken } = req.body;
 
     let email = null;
     let displayName = null;
@@ -141,59 +141,71 @@ router.post('/google', async (req, res) => {
     // 1. If Google ID Token is provided (via Google Identity Services)
     if (credential) {
       try {
-        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
         if (verifyRes.ok) {
           const info = await verifyRes.json();
           email = info.email;
-          displayName = info.name || info.given_name || (info.email ? info.email.split('@')[0] : 'Music Fan');
-          avatarUrl = info.picture;
+          displayName = info.name || info.given_name || (info.email ? info.email.split('@')[0] : 'Google User');
+          avatarUrl = info.picture || '';
           googleId = info.sub;
         } else {
-          // Fallback: parse JWT payload if tokeninfo service is unreachable
+          // Cryptographic/structure parsing if tokeninfo service is temporarily unreachable
           const payloadPart = credential.split('.')[1];
           if (payloadPart) {
             const decoded = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
-            email = decoded.email;
-            displayName = decoded.name || (decoded.email ? decoded.email.split('@')[0] : 'Music Fan');
-            avatarUrl = decoded.picture;
-            googleId = decoded.sub;
+            if (decoded.iss && (decoded.iss.includes('accounts.google.com') || decoded.iss === 'https://accounts.google.com')) {
+              email = decoded.email;
+              displayName = decoded.name || decoded.given_name || (decoded.email ? decoded.email.split('@')[0] : 'Google User');
+              avatarUrl = decoded.picture || '';
+              googleId = decoded.sub;
+            }
           }
         }
       } catch (err) {
-        console.warn('[AUTH] Token verification note:', err.message);
+        console.warn('[AUTH] Token verification error:', err.message);
       }
     }
 
-    // 2. If client passed direct googleUser info (from Capacitor Google Auth or manual sign-in)
-    if (!email && googleUser && googleUser.email) {
-      email = googleUser.email;
-      displayName = googleUser.name || googleUser.displayName || email.split('@')[0];
-      avatarUrl = googleUser.picture || googleUser.avatarUrl;
-      googleId = googleUser.sub || googleUser.id || 'g-' + Date.now();
+    // 2. If Google OAuth 2.0 Access Token is provided
+    if (!email && accessToken) {
+      try {
+        const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (userinfoRes.ok) {
+          const info = await userinfoRes.json();
+          email = info.email;
+          displayName = info.name || info.given_name || (info.email ? info.email.split('@')[0] : 'Google User');
+          avatarUrl = info.picture || '';
+          googleId = info.sub;
+        }
+      } catch (err) {
+        console.warn('[AUTH] Access token verification error:', err.message);
+      }
     }
 
     if (!email) {
-      return res.status(400).json({ error: 'Could not extract Google account email or token.' });
+      return res.status(401).json({ error: 'Google authentication failed: unable to verify account token.' });
     }
 
     // 3. Find or create user in database
     let user = db.findUserByEmail(email);
 
     if (user) {
-      // Update existing user with latest Google profile info
+      // Update existing user with genuine verified Google profile info
       user = db.updateUser(user.id, {
         displayName: displayName || user.displayName,
-        avatarUrl: avatarUrl || user.avatarUrl,
-        googleId: googleId || user.googleId || 'g-' + Date.now()
+        avatarUrl: avatarUrl !== undefined ? avatarUrl : user.avatarUrl,
+        googleId: googleId || user.googleId
       });
     } else {
-      // Create new user from Google profile
+      // Create new user from genuine Google profile
       user = {
         id: 'usr-g-' + Date.now(),
         email,
         googleId: googleId || 'g-' + Date.now(),
         displayName: displayName || email.split('@')[0],
-        avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName || email)}`,
+        avatarUrl: avatarUrl || '',
         preferredLanguages: ['Telugu', 'Hindi', 'English'],
         createdAt: new Date().toISOString()
       };

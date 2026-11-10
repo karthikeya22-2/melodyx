@@ -15,6 +15,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useMobilePlayerStore } from '../store/useMobilePlayerStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { api, playlistStorage } from '../services/api';
 import { Playlist, Track } from '../types';
 import { ImportPlaylistModal } from './ImportPlaylistModal';
@@ -38,8 +39,11 @@ export const LibraryScreen: React.FC = () => {
     togglePlay
   } = useMobilePlayerStore();
 
+  const { user } = useAuthStore();
   const [activeFilter, setActiveFilter] = useState<'all' | 'playlists' | 'artists'>('all');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isCreatingNewPlaylist, setIsCreatingNewPlaylist] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
   const [customPlaylists, setCustomPlaylists] = useState<Playlist[]>(() => playlistStorage.getPlaylists());
   const [feed, setFeed] = useState<any>(null);
 
@@ -47,6 +51,28 @@ export const LibraryScreen: React.FC = () => {
     api.getHomeFeed().then(setFeed);
     setCustomPlaylists(playlistStorage.getPlaylists());
   }, []);
+
+  const handleCreateEmptyPlaylist = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newPlaylistName.trim();
+    if (!title) return;
+
+    const newPl: Playlist = {
+      id: 'pl-' + Date.now(),
+      title,
+      description: `Created by ${user?.displayName || 'User'}`,
+      coverUrl: '/logo.png',
+      trackCount: 0,
+      tracks: [],
+      source: 'custom'
+    };
+
+    const updated = playlistStorage.savePlaylist(newPl);
+    setCustomPlaylists(updated);
+    setNewPlaylistName('');
+    setIsCreatingNewPlaylist(false);
+    setSelectedPlaylist(newPl);
+  };
 
   const allTracks: Track[] = [
     ...(feed?.trendingTelugu || []),
@@ -218,22 +244,73 @@ export const LibraryScreen: React.FC = () => {
       {/* 1. Header Bar */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-400 via-slate-200 to-white flex items-center justify-center text-xs font-black text-black shadow">
-            U
-          </div>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.displayName}
+              className="w-8 h-8 rounded-full object-cover ring-1 ring-white/20 shadow"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-400 via-slate-200 to-white flex items-center justify-center text-xs font-black text-black shadow">
+              {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+            </div>
+          )}
           <h1 className="text-2xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent tracking-tight">Your Library</h1>
         </div>
 
         <div className="flex items-center space-x-2 text-[#94A3B8]">
           <button
+            onClick={() => setIsCreatingNewPlaylist(true)}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/10 active:scale-95 transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New</span>
+          </button>
+          <button
             onClick={() => setIsImportModalOpen(true)}
             className="flex items-center space-x-1 px-3.5 py-1.5 rounded-full bg-gradient-to-b from-white via-slate-100 to-slate-300 text-black font-bold text-xs shadow-md active:scale-95 transition-transform"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Sparkles className="w-3.5 h-3.5 text-black" />
             <span>Import</span>
           </button>
         </div>
       </div>
+
+      {/* Inline Create New Playlist Card */}
+      {isCreatingNewPlaylist && (
+        <form onSubmit={handleCreateEmptyPlaylist} className="mb-3 p-3 rounded-2xl bg-[#131316] border border-white/20 space-y-2">
+          <p className="text-xs font-bold text-white">Create New Playlist</p>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              autoFocus
+              value={newPlaylistName}
+              onChange={e => setNewPlaylistName(e.target.value)}
+              placeholder="Enter playlist name..."
+              className="flex-1 bg-[#0A0A0C] border border-white/15 focus:border-white/50 focus:outline-none rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500"
+            />
+            <button
+              type="submit"
+              className="px-3.5 py-2 bg-white text-black font-extrabold text-xs rounded-xl shadow active:scale-95"
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreatingNewPlaylist(false);
+                setNewPlaylistName('');
+              }}
+              className="px-3 py-2 bg-white/5 text-slate-300 text-xs rounded-xl"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* 2. Filter Pills */}
       <div className="flex items-center space-x-2 pb-3 border-b border-white/10">
@@ -311,7 +388,7 @@ export const LibraryScreen: React.FC = () => {
               id: 'liked-songs',
               title: 'Liked Songs',
               description: 'Your favorite tracks',
-              coverUrl: likedTracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+              coverUrl: likedTracks[0]?.artwork || '/logo.png',
               trackCount: likedTracks.length,
               tracks: likedTracks
             });
@@ -329,7 +406,7 @@ export const LibraryScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Custom Imported Playlists */}
+        {/* Custom Imported & Created Playlists */}
         {customPlaylists.map(pl => (
           <div
             key={pl.id}
@@ -337,14 +414,17 @@ export const LibraryScreen: React.FC = () => {
             className="flex items-center space-x-3 p-1.5 rounded-xl active:bg-[#1A1A20] cursor-pointer transition-colors"
           >
             <img
-              src={pl.coverUrl}
+              src={pl.coverUrl || '/logo.png'}
               alt={pl.title}
               className="w-14 h-14 rounded-xl object-cover shrink-0 shadow border border-white/10"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo.png';
+              }}
             />
             <div className="truncate flex-1">
               <h3 className="font-bold text-xs text-white truncate">{pl.title}</h3>
               <p className="text-[10px] text-[#888] mt-0.5 truncate">
-                📥 Imported • {pl.tracks?.length || pl.trackCount || 0} songs
+                {pl.source === 'spotify' ? '📥 Spotify' : pl.source === 'jiosaavn' ? '📥 JioSaavn' : '🎵 Playlist'} • {pl.tracks?.length || pl.trackCount || 0} songs
               </p>
             </div>
           </div>
@@ -358,7 +438,7 @@ export const LibraryScreen: React.FC = () => {
                 id: 'recently-played',
                 title: 'Recently Played',
                 description: 'Songs you listened to recently',
-                coverUrl: recentlyPlayedTracks[0]?.artwork || 'https://c.saavncdn.com/683/RRR-Telugu-Telugu-2022-20250828171313-500x500.jpg',
+                coverUrl: recentlyPlayedTracks[0]?.artwork || '/logo.png',
                 trackCount: recentlyPlayedTracks.length,
                 tracks: recentlyPlayedTracks
               });
