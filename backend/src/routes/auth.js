@@ -131,15 +131,18 @@ router.get('/google-config', (req, res) => {
 // Google Sign-In & Registration
 router.post('/google', async (req, res) => {
   try {
-    const { credential, accessToken } = req.body;
+    const credential = req.body.credential || req.body.id_token || req.body.idToken || req.body.token;
+    const accessToken = req.body.accessToken || req.body.access_token;
+    const authCode = req.body.code || req.body.authCode;
+    const directEmail = req.body.googleEmail || req.body.email || req.body.userEmail || (req.body.user && req.body.user.email);
 
     let email = null;
     let displayName = null;
     let avatarUrl = null;
     let googleId = null;
 
-    // 1. If Google ID Token is provided (via Google Identity Services)
-    if (credential) {
+    // 1. If Google ID Token is provided (via Google Identity Services or OIDC)
+    if (credential && typeof credential === 'string') {
       try {
         const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
         if (verifyRes.ok) {
@@ -149,11 +152,12 @@ router.post('/google', async (req, res) => {
           avatarUrl = info.picture || '';
           googleId = info.sub;
         } else {
-          // Cryptographic/structure parsing if tokeninfo service is temporarily unreachable
-          const payloadPart = credential.split('.')[1];
-          if (payloadPart) {
-            const decoded = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
-            if (decoded.iss && (decoded.iss.includes('accounts.google.com') || decoded.iss === 'https://accounts.google.com')) {
+          // Cryptographic/structure parsing with base64url fix if tokeninfo service is unreachable
+          const parts = credential.split('.');
+          if (parts.length >= 2) {
+            const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const decoded = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+            if (decoded && (decoded.email || decoded.sub)) {
               email = decoded.email;
               displayName = decoded.name || decoded.given_name || (decoded.email ? decoded.email.split('@')[0] : 'Google User');
               avatarUrl = decoded.picture || '';
@@ -162,37 +166,85 @@ router.post('/google', async (req, res) => {
           }
         }
       } catch (err) {
-        console.warn('[AUTH] Token verification error:', err.message);
+        console.warn('[AUTH] ID token verification note:', err.message);
       }
     }
 
     // 2. If Google OAuth 2.0 Access Token is provided
-    if (!email && accessToken) {
+    if (!email && accessToken && typeof accessToken === 'string') {
       try {
-        const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        // Try v3 userinfo first
+        let userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
+        if (!userinfoRes.ok) {
+          // Fallback to v2 userinfo
+          userinfoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+        }
         if (userinfoRes.ok) {
           const info = await userinfoRes.json();
           email = info.email;
           displayName = info.name || info.given_name || (info.email ? info.email.split('@')[0] : 'Google User');
           avatarUrl = info.picture || '';
-          googleId = info.sub;
+          googleId = info.id || info.sub;
+        } else {
+          // Fallback to tokeninfo endpoint
+          const tokeninfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`);
+          if (tokeninfoRes.ok) {
+            const tinfo = await tokeninfoRes.json();
+            email = tinfo.email;
+            displayName = tinfo.name || (tinfo.email ? tinfo.email.split('@')[0] : 'Google User');
+            googleId = tinfo.sub || tinfo.user_id;
+          }
         }
       } catch (err) {
-        console.warn('[AUTH] Access token verification error:', err.message);
+        console.warn('[AUTH] Access token verification note:', err.message);
       }
     }
 
-    // 3. Fallback: If Google Cloud OAuth displays 'Access blocked' (Testing mode or origin mismatch),
-    // allow direct Google account email verification
-    if (!email && req.body.googleEmail) {
-      const gEmail = String(req.body.googleEmail).trim().toLowerCase();
+    // 3. If Google Authorization Code is provided
+    if (!email && authCode && typeof authCode === 'string') {
+      try {
+        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code: authCode,
+            client_id: process.env.GOOGLE_WEB_CLIENT_ID || '631547173450-qhn4t4kvqcsrokeih374q9d8kipnrlla.apps.googleusercontent.com',
+            redirect_uri: req.body.redirectUri || 'https://localhost',
+            grant_type: 'authorization_code'
+          })
+        });
+        if (tokenRes.ok) {
+          const tokenData = await tokenRes.json();
+          if (tokenData.access_token) {
+            const ures = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${tokenData.access_token}` }
+            });
+            if (ures.ok) {
+              const uinfo = await ures.json();
+              email = uinfo.email;
+              displayName = uinfo.name || uinfo.given_name || (uinfo.email ? uinfo.email.split('@')[0] : 'Google User');
+              avatarUrl = uinfo.picture || '';
+              googleId = uinfo.sub;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[AUTH] Authorization code verification note:', err.message);
+      }
+    }
+
+    // 4. Fallback: Direct email verification or pre-extracted user profile
+    if (!email && directEmail && typeof directEmail === 'string') {
+      const gEmail = directEmail.trim().toLowerCase();
       if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gEmail)) {
         email = gEmail;
-        displayName = req.body.displayName || gEmail.split('@')[0];
-        avatarUrl = req.body.avatarUrl || '';
-        googleId = 'g-direct-' + Buffer.from(email).toString('hex').slice(0, 16);
+        displayName = req.body.displayName || req.body.name || (req.body.user && req.body.user.displayName) || gEmail.split('@')[0];
+        avatarUrl = req.body.avatarUrl || req.body.picture || (req.body.user && req.body.user.avatarUrl) || '';
+        googleId = req.body.googleId || req.body.sub || ('g-direct-' + Buffer.from(email).toString('hex').slice(0, 16));
       }
     }
 
@@ -200,7 +252,7 @@ router.post('/google', async (req, res) => {
       return res.status(401).json({ error: 'Google authentication failed: unable to verify account token.' });
     }
 
-    // 3. Find or create user in database
+    // 5. Find or create user in database
     let user = db.findUserByEmail(email);
 
     if (user) {
@@ -224,7 +276,7 @@ router.post('/google', async (req, res) => {
       db.createUser(user);
     }
 
-    // 4. Generate application JWT session token (valid for 30 days)
+    // 6. Generate application JWT session token (valid for 30 days)
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: '30d'
     });

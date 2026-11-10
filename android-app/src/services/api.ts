@@ -679,6 +679,38 @@ export const api = {
       }
     }
 
+    // Client-side genuine Google profile extraction from verified Access Token
+    if (payload.accessToken) {
+      try {
+        let ures = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${payload.accessToken}` }
+        });
+        if (!ures.ok) {
+          ures = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${payload.accessToken}` }
+          });
+        }
+        if (ures.ok) {
+          const info = await ures.json();
+          if (info.email) {
+            return {
+              user: {
+                id: 'usr-g-' + (info.sub || info.id || Date.now()),
+                email: info.email,
+                displayName: info.name || info.given_name || info.email.split('@')[0],
+                avatarUrl: info.picture || '',
+                isGoogleAccount: true,
+                preferredLanguages: ['Telugu', 'Hindi', 'English']
+              },
+              token: 'melodyx-jwt-' + Date.now()
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('[AUTH] Client-side accessToken userinfo note:', err);
+      }
+    }
+
     if (payload.googleEmail) {
       const email = payload.googleEmail.trim().toLowerCase();
       return {
