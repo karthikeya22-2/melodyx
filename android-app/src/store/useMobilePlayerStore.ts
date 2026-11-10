@@ -131,37 +131,77 @@ function updateMediaSession(
   }
 }
 
-// Global bridge for hardware media buttons and Android lock-screen controls
+// Debounce controller to prevent duplicate action dispatch between native evaluateJavascript and Capacitor event bus
+let lastControlTime = 0;
+let lastControlType = '';
+const handleNativeMediaAction = (type: string, fn: () => void) => {
+  const now = Date.now();
+  if (now - lastControlTime < 350 && lastControlType === type) {
+    return; // Ignore duplicate calls within 350ms window
+  }
+  lastControlTime = now;
+  lastControlType = type;
+  fn();
+};
+
+// Global bridge for hardware media buttons, lock-screen controls and notification actions
 (window as any).__melodyx_nativePlay = () => {
-  const s = useMobilePlayerStore.getState();
-  if (!s.isPlaying) s.togglePlay();
+  handleNativeMediaAction('play', () => {
+    const s = useMobilePlayerStore.getState();
+    s.resume();
+  });
 };
 (window as any).__melodyx_nativePause = () => {
-  const s = useMobilePlayerStore.getState();
-  if (s.isPlaying) s.togglePlay();
+  handleNativeMediaAction('pause', () => {
+    const s = useMobilePlayerStore.getState();
+    s.pause();
+  });
 };
 (window as any).__melodyx_nativeToggle = () => {
-  useMobilePlayerStore.getState().togglePlay();
+  handleNativeMediaAction('toggle', () => {
+    const s = useMobilePlayerStore.getState();
+    s.togglePlay();
+  });
 };
 (window as any).__melodyx_nativeNext = () => {
-  useMobilePlayerStore.getState().nextTrack();
+  handleNativeMediaAction('next', () => {
+    const s = useMobilePlayerStore.getState();
+    s.nextTrack();
+  });
 };
 (window as any).__melodyx_nativePrev = () => {
-  useMobilePlayerStore.getState().previousTrack();
+  handleNativeMediaAction('prev', () => {
+    const s = useMobilePlayerStore.getState();
+    s.previousTrack();
+  });
+};
+(window as any).__melodyx_nativeStop = () => {
+  handleNativeMediaAction('stop', () => {
+    const s = useMobilePlayerStore.getState();
+    s.pause();
+  });
 };
 (window as any).__melodyx_nativeSeek = (sec: number) => {
   useMobilePlayerStore.getState().seek(sec);
 };
 
+// Also route Capacitor listener through the same debouncer (ensures zero double-firing)
 try {
   MelodyxMedia.addListener('mediaAction', ({ action, position }) => {
     const s = useMobilePlayerStore.getState();
-    if (action.includes('TOGGLE')) s.togglePlay();
-    else if (action.includes('PLAY')) { if (!s.isPlaying) s.togglePlay(); }
-    else if (action.includes('PAUSE')) { if (s.isPlaying) s.togglePlay(); }
-    else if (action.includes('NEXT')) s.nextTrack();
-    else if (action.includes('PREV')) s.previousTrack();
-    else if (action.includes('SEEK') && position !== undefined) s.seek(position);
+    if (action.includes('TOGGLE')) {
+      handleNativeMediaAction('toggle', () => s.togglePlay());
+    } else if (action.includes('PLAY')) {
+      handleNativeMediaAction('play', () => s.resume());
+    } else if (action.includes('PAUSE') || action.includes('STOP')) {
+      handleNativeMediaAction('pause', () => s.pause());
+    } else if (action.includes('NEXT')) {
+      handleNativeMediaAction('next', () => s.nextTrack());
+    } else if (action.includes('PREV')) {
+      handleNativeMediaAction('prev', () => s.previousTrack());
+    } else if (action.includes('SEEK') && position !== undefined) {
+      s.seek(position);
+    }
   });
   MelodyxMedia.requestNotificationPermission().catch(() => {});
 } catch (e) { }

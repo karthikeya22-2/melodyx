@@ -50,6 +50,15 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onDestroy() {
+        MelodyxMediaService service = MelodyxMediaService.getInstance();
+        if (service != null && !service.isPlaying()) {
+            service.stopMediaService();
+        }
+        super.onDestroy();
+    }
+
+    @Override
     public void onBackPressed() {
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().evaluateJavascript(

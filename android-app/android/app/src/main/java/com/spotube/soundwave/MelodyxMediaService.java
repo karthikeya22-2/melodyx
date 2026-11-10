@@ -65,6 +65,10 @@ public class MelodyxMediaService extends Service {
         return instance;
     }
 
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -160,8 +164,8 @@ public class MelodyxMediaService extends Service {
             } else if (ACTION_PREV.equals(action)) {
                 dispatchAction(ACTION_PREV, null);
             } else if (ACTION_STOP.equals(action)) {
-                stopForeground(true);
-                stopSelf();
+                dispatchAction(ACTION_PAUSE, null);
+                stopMediaService();
             }
         }
         return START_NOT_STICKY;
@@ -255,7 +259,8 @@ public class MelodyxMediaService extends Service {
         );
 
         PendingIntent prevIntent = createServicePendingIntent(ACTION_PREV, 1);
-        PendingIntent toggleIntent = createServicePendingIntent(ACTION_TOGGLE, 2);
+        String toggleAction = isPlaying ? ACTION_PAUSE : ACTION_PLAY;
+        PendingIntent toggleIntent = createServicePendingIntent(toggleAction, 2);
         PendingIntent nextIntent = createServicePendingIntent(ACTION_NEXT, 3);
         PendingIntent stopIntent = createServicePendingIntent(ACTION_STOP, 4);
 
@@ -280,7 +285,8 @@ public class MelodyxMediaService extends Service {
             .setStyle(mediaStyle)
             .addAction(R.drawable.ic_skip_previous, "Previous", prevIntent)
             .addAction(playPauseIcon, playPauseTitle, toggleIntent)
-            .addAction(R.drawable.ic_skip_next, "Next", nextIntent);
+            .addAction(R.drawable.ic_skip_next, "Next", nextIntent)
+            .addAction(R.drawable.ic_close, "Close", stopIntent);
 
         if (currentArtworkBitmap != null) {
             builder.setLargeIcon(currentArtworkBitmap);
@@ -288,10 +294,24 @@ public class MelodyxMediaService extends Service {
 
         Notification notification = builder.build();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (isPlaying) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+            }
         } else {
-            startForeground(NOTIFICATION_ID, notification);
+            // Remove foreground status so user can swipe notification away when paused!
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_DETACH);
+            } else {
+                stopForeground(false);
+            }
+            if (manager != null) {
+                manager.notify(NOTIFICATION_ID, notification);
+            }
         }
     }
 
@@ -322,11 +342,29 @@ public class MelodyxMediaService extends Service {
 
     public void stopMediaService() {
         updateWakeLock(false);
+        isPlaying = false;
         if (mediaSession != null) {
             mediaSession.setActive(false);
         }
-        stopForeground(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.cancel(NOTIFICATION_ID);
+        }
         stopSelf();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        // If playback is not playing when user swipes away/closes app, immediately remove notification and stop service
+        if (!isPlaying) {
+            stopMediaService();
+        }
     }
 
     @Override
