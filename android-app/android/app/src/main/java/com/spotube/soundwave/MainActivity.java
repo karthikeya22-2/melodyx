@@ -64,15 +64,34 @@ public class MainActivity extends BridgeActivity {
                         }
 
                         oauthDialog = new Dialog(MainActivity.this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-                        WebView popupView = new WebView(MainActivity.this);
+                        final WebView popupView = new WebView(MainActivity.this);
                         WebSettings popupSettings = popupView.getSettings();
                         popupSettings.setJavaScriptEnabled(true);
                         popupSettings.setUserAgentString(cleanUa);
                         popupSettings.setDomStorageEnabled(true);
                         popupSettings.setDatabaseEnabled(true);
                         popupSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+                        popupSettings.setSupportMultipleWindows(true);
 
                         CookieManager.getInstance().setAcceptThirdPartyCookies(popupView, true);
+
+                        // Inject Javascript Interface into popup to capture any postMessage or token
+                        popupView.addJavascriptInterface(new Object() {
+                            @android.webkit.JavascriptInterface
+                            public void onTokenReceived(String tokenData) {
+                                if (tokenData != null && !tokenData.isEmpty()) {
+                                    dispatchTokenToMainWebView(tokenData);
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (oauthDialog != null && oauthDialog.isShowing()) {
+                                                oauthDialog.dismiss();
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }, "MelodyxOAuthBridge");
 
                         popupView.setWebChromeClient(new WebChromeClient() {
                             @Override
@@ -86,28 +105,51 @@ public class MainActivity extends BridgeActivity {
                         popupView.setWebViewClient(new WebViewClient() {
                             @Override
                             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                                Uri uri = request.getUrl();
-                                if (uri != null) {
-                                    String urlStr = uri.toString();
-                                    if (urlStr.contains("access_token=") || urlStr.contains("id_token=") || urlStr.contains("code=") || urlStr.contains("credential=")) {
-                                        dispatchTokenToMainWebView(urlStr);
-                                        if (oauthDialog != null && oauthDialog.isShowing()) {
-                                            oauthDialog.dismiss();
-                                        }
-                                        return true;
-                                    }
+                                if (request != null && request.getUrl() != null) {
+                                    String urlStr = request.getUrl().toString();
+                                    if (checkAndDispatchAuthUrl(urlStr)) return true;
                                 }
                                 return false;
                             }
 
                             @Override
+                            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                                if (checkAndDispatchAuthUrl(url)) return true;
+                                return false;
+                            }
+
+                            @Override
+                            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                                super.onPageStarted(view, url, favicon);
+                                checkAndDispatchAuthUrl(url);
+                            }
+
+                            @Override
                             public void onPageFinished(WebView view, String url) {
                                 super.onPageFinished(view, url);
-                                if (url != null && (url.contains("access_token=") || url.contains("id_token=") || url.contains("code=") || url.contains("credential="))) {
-                                    dispatchTokenToMainWebView(url);
-                                    if (oauthDialog != null && oauthDialog.isShowing()) {
-                                        oauthDialog.dismiss();
-                                    }
+                                checkAndDispatchAuthUrl(url);
+                                injectPostMessageBridge(view);
+                            }
+
+                            @Override
+                            public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                                super.doUpdateVisitedHistory(view, url, isReload);
+                                checkAndDispatchAuthUrl(url);
+                            }
+
+                            @Override
+                            public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
+                                super.onReceivedError(view, request, error);
+                                if (request != null && request.getUrl() != null) {
+                                    checkAndDispatchAuthUrl(request.getUrl().toString());
+                                }
+                            }
+
+                            @Override
+                            public void onLoadResource(WebView view, String url) {
+                                super.onLoadResource(view, url);
+                                if (url != null && (url.contains("access_token=") || url.contains("id_token=") || url.contains("credential="))) {
+                                    checkAndDispatchAuthUrl(url);
                                 }
                             }
                         });
@@ -127,11 +169,70 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private void dispatchTokenToMainWebView(String url) {
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            String js = "window.__handleGoogleRedirectUrl && window.__handleGoogleRedirectUrl('" + url.replace("'", "\\'") + "');";
-            getBridge().getWebView().evaluateJavascript(js, null);
+    private boolean checkAndDispatchAuthUrl(String url) {
+        if (url == null) return false;
+        if (url.contains("access_token=") || url.contains("id_token=") || url.contains("credential=") || url.contains("code=")) {
+            dispatchTokenToMainWebView(url);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (oauthDialog != null && oauthDialog.isShowing()) {
+                        oauthDialog.dismiss();
+                    }
+                }
+            });
+            return true;
         }
+        if (url.startsWith("https://localhost") || url.startsWith("http://localhost")) {
+            dispatchTokenToMainWebView(url);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (oauthDialog != null && oauthDialog.isShowing()) {
+                        oauthDialog.dismiss();
+                    }
+                }
+            });
+            return true;
+        }
+        return false;
+    }
+
+    private void injectPostMessageBridge(WebView view) {
+        try {
+            String js = "(function() {" +
+                "  function notify(d) {" +
+                "    try {" +
+                "      var str = (typeof d === 'string') ? d : JSON.stringify(d);" +
+                "      if (window.MelodyxOAuthBridge) { window.MelodyxOAuthBridge.onTokenReceived(str); }" +
+                "    } catch(e){}" +
+                "  }" +
+                "  window.addEventListener('message', function(e) { if (e && e.data) { notify(e.data); } });" +
+                "  if (window.opener) {" +
+                "    try {" +
+                "      var origPost = window.opener.postMessage;" +
+                "      window.opener.postMessage = function(msg) {" +
+                "        notify(msg);" +
+                "        try { return origPost.apply(window.opener, arguments); } catch(err){}" +
+                "      };" +
+                "    } catch(err){}" +
+                "  }" +
+                "})();";
+            view.evaluateJavascript(js, null);
+        } catch (Exception e) {}
+    }
+
+    private void dispatchTokenToMainWebView(final String url) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    String safeUrl = url.replace("\\", "\\\\").replace("'", "\\'");
+                    String js = "window.__handleGoogleRedirectUrl && window.__handleGoogleRedirectUrl('" + safeUrl + "');";
+                    getBridge().getWebView().evaluateJavascript(js, null);
+                }
+            }
+        });
     }
 
     @Override

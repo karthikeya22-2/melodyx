@@ -164,64 +164,59 @@ export const CompulsoryAuthScreen: React.FC = () => {
     }
   };
 
-  // Launch Google Sign-In on demand
+  // Launch Google Sign-In with Direct OAuth 2.0 URL (Bypasses postMessage WebView freezing)
   const triggerGoogleSignIn = () => {
     setError(null);
     setIsLoading(true);
+    setSuccessMsg('Opening Google Sign-In...');
 
-    if (window.google?.accounts?.oauth2) {
-      try {
-        const tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'email profile openid',
-          callback: (tokenResp: any) => {
-            if (tokenResp.error) {
-              setIsLoading(false);
-              if (tokenResp.error !== 'popup_closed_by_user') {
-                setError(`Google Sign-In notice: ${tokenResp.error}`);
-              }
-              return;
-            }
-            handleGoogleCredentialResponse(tokenResp);
-          }
-        });
-        tokenClient.requestAccessToken();
-        return;
-      } catch (err: any) {
-        console.warn('oauth2 token client failed:', err);
+    const redirectUri = 'https://localhost';
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('email profile openid')}&prompt=select_account`;
+
+    try {
+      const popup = window.open(authUrl, '_blank');
+      if (!popup) {
+        window.location.href = authUrl;
       }
+    } catch (e) {
+      window.location.href = authUrl;
     }
-
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setIsLoading(false);
-          }
-        });
-        return;
-      } catch (err) {
-        console.warn('accounts.id.prompt error:', err);
-      }
-    }
-
-    setIsLoading(false);
-    setError('Google Sign-In service is loading. Please tap the Google button below.');
   };
 
   // Mount Google Identity Services Button and Native Redirect Handlers
   useEffect(() => {
     // 1. Android Native WebView Redirect Handler (dispatched from MainActivity.java)
-    (window as any).__handleGoogleRedirectUrl = (url: string) => {
+    (window as any).__handleGoogleRedirectUrl = (urlOrData: string) => {
       try {
-        console.log('[Melodyx Auth] Native Google redirect received:', url);
+        console.log('[Melodyx Auth] Google redirect or token received:', urlOrData);
+        setIsLoading(true);
+        setSuccessMsg('Account selected! Connecting to Melodyx...');
+
+        if (!urlOrData) return;
+
+        // If payload is JSON from postMessage bridge
+        if (urlOrData.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(urlOrData);
+            if (parsed.access_token || parsed.credential || parsed.id_token) {
+              handleGoogleCredentialResponse(parsed);
+              return;
+            }
+            if (parsed.type === 'oauth2_response' && parsed.access_token) {
+              handleGoogleCredentialResponse({ access_token: parsed.access_token });
+              return;
+            }
+          } catch (e) {}
+        }
+
+        // If payload is redirect URL with hash fragment or query params
         let tokenPart = '';
-        if (url.includes('#')) {
-          tokenPart = url.substring(url.indexOf('#') + 1);
-        } else if (url.includes('?')) {
-          tokenPart = url.substring(url.indexOf('?') + 1);
+        if (urlOrData.includes('#')) {
+          tokenPart = urlOrData.substring(urlOrData.indexOf('#') + 1);
+        } else if (urlOrData.includes('?')) {
+          tokenPart = urlOrData.substring(urlOrData.indexOf('?') + 1);
         } else {
-          tokenPart = url;
+          tokenPart = urlOrData;
         }
 
         const params = new URLSearchParams(tokenPart);
@@ -230,6 +225,13 @@ export const CompulsoryAuthScreen: React.FC = () => {
 
         if (accessToken || credential) {
           handleGoogleCredentialResponse({ access_token: accessToken, credential });
+          return;
+        }
+
+        const errorMsg = params.get('error');
+        if (errorMsg) {
+          setIsLoading(false);
+          setError(`Google Sign-In notice: ${errorMsg}`);
         }
       } catch (err) {
         console.warn('[Melodyx Auth] Error parsing native redirect URL:', err);
