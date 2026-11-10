@@ -26,6 +26,8 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ updateInfo, onClose })
   const [downloadedMB, setDownloadedMB] = useState('0');
   const [totalMB, setTotalMB] = useState('0');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [downloadedFilePath, setDownloadedFilePath] = useState<string | null>(null);
+  const [needsPermission, setNeedsPermission] = useState(false);
 
   useEffect(() => {
     let sub: any = null;
@@ -59,10 +61,17 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ updateInfo, onClose })
     setDownloadState('downloading');
     setProgress(0);
     setErrorMessage(null);
+    setNeedsPermission(false);
 
     try {
-      const result = await MelodyxMedia.downloadAndInstallApk({ downloadUrl: url });
+      const result: any = await MelodyxMedia.downloadAndInstallApk({ downloadUrl: url });
+      if (result && result.filePath) {
+        setDownloadedFilePath(result.filePath);
+      }
       if (result && result.success) {
+        setDownloadState('installing');
+      } else if (result && result.needsPermission) {
+        setNeedsPermission(true);
         setDownloadState('installing');
       } else {
         // Fallback: open URL in browser / direct intent
@@ -75,6 +84,19 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ updateInfo, onClose })
       window.open(url, '_system');
       setDownloadState('idle');
       onClose();
+    }
+  };
+
+  const handleManualInstall = async () => {
+    const url = updateInfo.apkDownloadUrl;
+    if (downloadedFilePath) {
+      try {
+        await MelodyxMedia.installApk({ filePath: downloadedFilePath });
+      } catch (e) {
+        if (url) window.open(url, '_system');
+      }
+    } else if (url) {
+      window.open(url, '_system');
     }
   };
 
@@ -191,15 +213,26 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ updateInfo, onClose })
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-white">Download Complete</h4>
               <p className="text-xs text-[#94A3B8]">
-                Opening the Android Package Installer... Tap <strong>Install</strong> or <strong>Update</strong> when prompted.
+                {needsPermission
+                  ? "Please toggle 'Allow from this source' in Settings, then tap Install below."
+                  : 'Opening the Android Package Installer... Tap Install or Update when prompted.'}
               </p>
             </div>
-            <button
-              onClick={() => handleStartUpdate()}
-              className="mt-2 text-xs font-bold text-rose-400 underline"
-            >
-              Click here if installer did not open
-            </button>
+            <div className="flex flex-col space-y-2 pt-1">
+              <button
+                onClick={handleManualInstall}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-xs font-bold text-white shadow-lg flex items-center justify-center space-x-1.5 active:scale-98"
+              >
+                <Download className="w-4 h-4" />
+                <span>Install Update Now</span>
+              </button>
+              <button
+                onClick={() => updateInfo.apkDownloadUrl && window.open(updateInfo.apkDownloadUrl, '_system')}
+                className="text-xs text-rose-400 underline font-medium"
+              >
+                Or download directly via browser
+              </button>
+            </div>
           </div>
         )}
 

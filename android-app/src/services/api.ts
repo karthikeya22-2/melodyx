@@ -717,10 +717,14 @@ export const api = {
     };
   },
 
-  async checkForUpdates(currentVersion: string = '2.0.0', currentVersionCode: number = 1) {
+  async checkForUpdates(currentVersion: string = '2.2.0', currentVersionCode: number = 3) {
     try {
       const host = getApiHost();
-      const data = await queryUrlSafely(`${host}/api/updates/check?version=${encodeURIComponent(currentVersion)}&versionCode=${currentVersionCode}`, 3000);
+      let data = await queryUrlSafely(`${host}/api/updates/check?version=${encodeURIComponent(currentVersion)}&versionCode=${currentVersionCode}`, 10000);
+      if (!data) {
+        // Fallback retry with public Render URL
+        data = await queryUrlSafely(`https://melodyx-zday.onrender.com/api/updates/check?version=${encodeURIComponent(currentVersion)}&versionCode=${currentVersionCode}`, 10000);
+      }
       if (data) {
         if (data.apkDownloadUrl && data.apkDownloadUrl.startsWith('/')) {
           data.apkDownloadUrl = `${host}${data.apkDownloadUrl}`;

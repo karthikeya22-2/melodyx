@@ -24,8 +24,8 @@ export const SettingsScreen: React.FC = () => {
   const [normalizeVolume, setNormalizeVolume] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const [installedVersion, setInstalledVersion] = useState('2.1.0');
-  const [installedVersionCode, setInstalledVersionCode] = useState(2);
+  const [installedVersion, setInstalledVersion] = useState('2.2.0');
+  const [installedVersionCode, setInstalledVersionCode] = useState(3);
   const [activeModalUpdate, setActiveModalUpdate] = useState<UpdateInfo | null>(null);
   const [updateStatus, setUpdateStatus] = useState<{
     checked: boolean;
@@ -39,7 +39,7 @@ export const SettingsScreen: React.FC = () => {
     MelodyxMedia.getAppVersion().then(v => {
       if (v && v.versionName) {
         setInstalledVersion(v.versionName);
-        setInstalledVersionCode(Number(v.versionCode) || 2);
+        setInstalledVersionCode(Number(v.versionCode) || 3);
       }
     }).catch(() => {});
   }, []);
@@ -200,7 +200,7 @@ export const SettingsScreen: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">Version & Updates</p>
-                <p className="text-[11px] text-[#94A3B8]">Current Installed: v2.0.0</p>
+                <p className="text-[11px] text-[#94A3B8]">Current Installed: v{installedVersion}</p>
               </div>
             </div>
             <button
@@ -246,7 +246,7 @@ export const SettingsScreen: React.FC = () => {
               ) : (
                 <div className="flex items-center space-x-2 text-white font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>App is up to date (Version 2.0.0)</span>
+                  <span>App is up to date (Version {installedVersion})</span>
                 </div>
               )}
             </div>
