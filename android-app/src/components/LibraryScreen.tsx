@@ -138,7 +138,7 @@ export const LibraryScreen: React.FC = () => {
               {selectedPlaylist.title}
             </h1>
             <p className="text-xs text-[#888]">
-              {selectedPlaylist.description || 'Playlist • SoundWave'}
+              {selectedPlaylist.description || 'Playlist • Melodyx'}
             </p>
             <p className="text-[11px] text-[#666]">
               {playlistTracks.length} {playlistTracks.length === 1 ? 'song' : 'songs'} • Full-Length & Free

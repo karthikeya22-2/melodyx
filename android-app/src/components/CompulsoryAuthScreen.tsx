@@ -209,8 +209,46 @@ export const CompulsoryAuthScreen: React.FC = () => {
     setError('Google Sign-In service is loading. Please tap the Google button below.');
   };
 
-  // Mount Google Identity Services Button
+  // Mount Google Identity Services Button and Native Redirect Handlers
   useEffect(() => {
+    // 1. Android Native WebView Redirect Handler (dispatched from MainActivity.java)
+    (window as any).__handleGoogleRedirectUrl = (url: string) => {
+      try {
+        console.log('[Melodyx Auth] Native Google redirect received:', url);
+        let tokenPart = '';
+        if (url.includes('#')) {
+          tokenPart = url.substring(url.indexOf('#') + 1);
+        } else if (url.includes('?')) {
+          tokenPart = url.substring(url.indexOf('?') + 1);
+        } else {
+          tokenPart = url;
+        }
+
+        const params = new URLSearchParams(tokenPart);
+        const accessToken = params.get('access_token');
+        const credential = params.get('credential') || params.get('id_token');
+
+        if (accessToken || credential) {
+          handleGoogleCredentialResponse({ access_token: accessToken, credential });
+        }
+      } catch (err) {
+        console.warn('[Melodyx Auth] Error parsing native redirect URL:', err);
+      }
+    };
+
+    // 2. Window postMessage handler for OAuth popup
+    const handleWindowMessage = (event: MessageEvent) => {
+      try {
+        if (!event.data) return;
+        if (typeof event.data === 'object') {
+          if (event.data.credential || event.data.access_token) {
+            handleGoogleCredentialResponse(event.data);
+          }
+        }
+      } catch (e) { }
+    };
+    window.addEventListener('message', handleWindowMessage);
+
     let checkInterval: any = null;
     let attempts = 0;
 
@@ -253,6 +291,8 @@ export const CompulsoryAuthScreen: React.FC = () => {
     }
 
     return () => {
+      delete (window as any).__handleGoogleRedirectUrl;
+      window.removeEventListener('message', handleWindowMessage);
       if (checkInterval) clearInterval(checkInterval);
     };
   }, []);
